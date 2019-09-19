@@ -96,11 +96,6 @@ bias of success probability estimation.
   and thire column is the corresponding p-value. Notice that clusters are
   not necessary to be exclusive.}
   \item{plot}{The plot.}
-%%  ~Describe the value returned
-%%  If it is a LIST, use
-%%  \item{comp1 }{Description of 'comp1'}
-%%  \item{comp2 }{Description of 'comp2'}
-%% ...
 }
 
 \author{Zhicong Zhao

@@ -120,7 +120,7 @@ significance level of multiple window length scanning is a future work topic.
 %%  ~~who you are~~
 }
 \note{Package \code{POT}
-\url{https://cran.r-project.org/web/packages/POT/index.html}
+\url{https://cran.r-project.org/package=POT}
 needs to be installed first.
 %%  ~~further notes~~
 }

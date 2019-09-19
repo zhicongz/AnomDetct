@@ -37,7 +37,7 @@ generalized pareto distribution.
 %%  ~~who you are~~
 }
 \note{To use \code{gpd}, package \pkg{POT}
-\url{https://cran.r-project.org/web/packages/POT/index.html}
+\url{https://cran.r-project.org/package=POT}
 needs to be installed first.
 %%  ~~further notes~~
 }

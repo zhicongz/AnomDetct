@@ -9,7 +9,7 @@ Authors@R: c(person("Zhicong", "Zhao", role = c("aut", "cre"),
 	      person("Jonathan", "Woody", role = "ths"),
 	      person("Tung-Lung", "Wu", role = "ths"),
               person("Xiaojing", "Ni", role = "ctb"))
-Description: Detect embedded clusters in a given continuous distributed sample. The cluster can be either a fix point cluster or a cluster with small variance. The underlying distribution, cluster locations and cluster size are not necessary to be specified. The math work is shown in a paper written by Jonathan Woody, Tung-Lung Wu and Zhicong Zhao, which is going to be submitted soon. The numeric approximation of scan statistics is from 1-dependent stationary sequences (Haiman 2007) <doi:10.1016/j.jspi.2006.06.010>
+Description: Detect embedded clusters in a given continuous distributed sample. The cluster can be either a fix point cluster or a cluster with small variance. The underlying distribution, cluster locations and cluster size are not necessary to be specified. The math work is shown in a paper written by Jonathan Woody, Tung-Lung Wu and Zhicong Zhao, which is going to be submitted soon. The numeric approximation of scan statistics is from 1-dependent stationary sequences (Haiman 2007) <doi:10.1016/j.jspi.2006.06.010>.
 Date: 2019/9/17
 URL: https://github.com/zhicongz/AnomDetct
 BugReports: https://github.com/zhicongz/AnomDetct/issues

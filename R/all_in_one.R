@@ -426,7 +426,7 @@ fit_dist <- function(x,dist_null = NA,...){
                                       lower = c(-Inf,0))$par,
                          error = function(e) NA)
 
-    if(is.na(para_hat)){
+    if(is.na(para_hat[1])){
       list_cauchy <- list(0,"cauchy",NA)
     }else{
       list_cauchy <- list(stats::ks.test(x,stats::pcauchy,
@@ -446,7 +446,7 @@ fit_dist <- function(x,dist_null = NA,...){
                                       method = "L-BFGS-B",lower = c(-Inf,0))$par,
                          error = function(e) NA)
 
-    if(is.na(para_hat)){
+    if(is.na(para_hat[1])){
       list_logis <- list(0,"logis",NA)
     }else{
       list_logis <- list(stats::ks.test(x,stats::plogis,
@@ -465,7 +465,7 @@ fit_dist <- function(x,dist_null = NA,...){
                                       method = "L-BFGS-B",lower = c(-Inf,0))$par,
                          error = function(e) NA)
 
-    if(is.na(para_hat)){
+    if(is.na(para_hat[1])){
       list_t <- list(0,"t",NA)
     }else{
       list_t <- list(stats::ks.test(x,stats::pt,para_hat)$p.value,
@@ -487,7 +487,7 @@ fit_dist <- function(x,dist_null = NA,...){
                                         method = "L-BFGS-B",lower = 0)$par,
                            error = function(e) NA)
 
-      if(is.na(para_hat)){
+      if(is.na(para_hat[1])){
         list_gamma <- list(0,"gamma",NA)
       }else{
         list_gamma <- list(stats::ks.test(x,stats::pgamma,
@@ -505,7 +505,7 @@ fit_dist <- function(x,dist_null = NA,...){
                                         method = "L-BFGS-B",lower = 0)$par,
                            error = function(e) NA)
 
-      if(is.na(para_hat)){
+      if(is.na(para_hat[1])){
         list_chisq <- list(0,"chisq",NA)
       }else{
         list_chisq <- list(stats::ks.test(x,stats::pchisq,para_hat)$p.value,
@@ -522,7 +522,7 @@ fit_dist <- function(x,dist_null = NA,...){
                                         method = "L-BFGS-B",lower = 0)$par,
                            error = function(e) NA)
 
-      if(is.na(para_hat)){
+      if(is.na(para_hat[1])){
         list_exp <- list(0,"exp",NA)
       }else{
         list_exp <- list(stats::ks.test(x,stats::pexp,para_hat)$p.value,
@@ -543,7 +543,7 @@ fit_dist <- function(x,dist_null = NA,...){
                                         method = "L-BFGS-B",lower = 0)$par,
                            error = function(e) NA)
 
-      if(is.na(para_hat)){
+      if(is.na(para_hat[1])){
         list_f <- list(0,"f",NA)
       }else{
         list_f <- list(stats::ks.test(x,stats::pf,
@@ -563,7 +563,7 @@ fit_dist <- function(x,dist_null = NA,...){
                                         method = "L-BFGS-B",lower = 0)$par,
                            error = function(e) NA)
 
-      if(is.na(para_hat)){
+      if(is.na(para_hat[1])){
         list_lnorm <- list(0,"lnorm",NA)
       }else{
         list_lnorm <- list(stats::ks.test(x,stats::plnorm,
@@ -583,7 +583,7 @@ fit_dist <- function(x,dist_null = NA,...){
                                         method = "L-BFGS-B",lower = 0)$par,
                            error = function(e) NA)
 
-      if(is.na(para_hat)){
+      if(is.na(para_hat[1])){
         list_weibull <- list(0,"weibull",NA)
       }else{
         list_weibull <- list(stats::ks.test(x,stats::pweibull,
@@ -608,7 +608,7 @@ fit_dist <- function(x,dist_null = NA,...){
                                           method = "L-BFGS-B",lower = 0)$par,
                              error = function(e) NA)
 
-        if(is.na(para_hat)){
+        if(is.na(para_hat[1])){
           list_beta <- list(0,"beta",NA)
         }else{
           list_beta <- list(stats::ks.test(x,stats::pbeta,

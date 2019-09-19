@@ -402,8 +402,8 @@ fit_dist <- function(x,dist_null = NA,...){
   oldw <- getOption("warn")
   options(warn = -1)
 
-  if(min(x)>0) sum_log_x <- sum(log(x))
-  sum_x     <- sum(x)
+  if(min(x)>0)sum_log_x <- sum(log(x))
+  sum_x <- sum(x)
   if(is.na(dist_null)){
     list_normal <- list(stats::ks.test(x,stats::pnorm,
                                        mean(x),stats::sd(x))$p.value,
@@ -422,7 +422,8 @@ fit_dist <- function(x,dist_null = NA,...){
     }
 
     para_hat <- tryCatch(stats::optim(par = c(1,1), fn = cauchy_den,
-                                      method = "L-BFGS-B",lower = c(-Inf,0))$par,
+                                      method = "L-BFGS-B",
+                                      lower = c(-Inf,0))$par,
                          error = function(e) NA)
 
     if(is.na(para_hat)){

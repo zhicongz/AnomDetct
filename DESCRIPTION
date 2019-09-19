@@ -5,7 +5,7 @@ Version: 0.0.0.9000
 Depends: R(>= 3.6),
 	 stats(>= 3.6.1)
 Authors@R: c(person("Zhicong", "Zhao", role = c("aut", "cre"),
-                     email = "zz204@msstate.edu"),
+                     email = "zhicong37@gmail.com"),
 	      person("Jonathan", "Woody", role = "ths"),
 	      person("Tung-Lung", "Wu", role = "ths"),
               person("Xiaojing", "Ni", role = "ctb"))

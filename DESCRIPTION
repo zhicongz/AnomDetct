@@ -1,0 +1,23 @@
+Package: AnomDetct
+Type: Package
+Title: Anomaly Detection via Scan Statistics
+Version: 0.0.0.9000
+Depends: R(>= 3.6),
+	 stats(>= 3.6.1)
+Authors@R: c(person("Zhicong", "Zhao", role = c("aut", "cre"),
+                     email = "zz204@msstate.edu"),
+	      person("Jonathan", "Woody", role = "ths"),
+	      person("Tung-Lung", "Wu", role = "ths"),
+              person("Xiaojing", "Ni", role = "ctb"))
+Description: Detect embedded clusters in a given continuous distributed sample. The cluster can be either a fix point cluster or a cluster with small variance. The underlying distribution, cluster locations and cluster size are not necessary to be specified. The math work is shown in a paper written by Jonathan Woody, Tung-Lung Wu and Zhicong Zhao, which is going to be submitted soon. 
+Date: 2019/9/17
+URL: https://github.com/zhicongz/AnomDetct
+BugReports: https://github.com/zhicongz/AnomDetct/issues
+Suggests: ggplot2 (>= 2.2.1), 
+          Matrix (>= 1.2-12), 
+          parallel (>= 3.4.4), 
+          POT (>= 1.1-6)
+License: GPL-3 + file LICENSE
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 6.1.1

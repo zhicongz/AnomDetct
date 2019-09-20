@@ -31,9 +31,5 @@ hypothesis can still be able to detect those.
 tran_detct(sim_df_N,loc = 10,HRR_kernel = "gaussian", est_fun = "sbsp",
            n_hz_sample = 50, n_hz_size = 200, MLE_unit = 0.1,
            x_unit = 0.001, hazard_bandwidth = 0.2, tail_obs = 100)
-
-tran_detct(sim_df_Z,loc = 10,HRR_kernel = "gaussian", est_fun = "sbsp",
-           n_hz_sample = 50, n_hz_size = 200, MLE_unit = 0.1,
-           x_unit = 0.001, hazard_bandwidth = 0.2, tail_obs = 100)
 }
 \keyword{datasets}

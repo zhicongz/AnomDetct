@@ -28,8 +28,10 @@ hypothesis can still be able to detect those.
 }
 
 \examples{
-tran_detct(sim_df_N,loc = 10,HRR_kernel = "gaussian", est_fun = "sbsp",
-           n_hz_sample = 50, n_hz_size = 200, MLE_unit = 0.1,
+## applied tran_detct on sampled data
+set.seed(100); x <- sample(sim_df_N, 5000)
+tran_detct(x,loc = 10,HRR_kernel = "gaussian", est_fun = "sbsp",
+           n_hz_sample = 40, n_hz_size = 100, MLE_unit = 0.1,
            x_unit = 0.001, hazard_bandwidth = 0.2, tail_obs = 100)
 }
 \keyword{datasets}

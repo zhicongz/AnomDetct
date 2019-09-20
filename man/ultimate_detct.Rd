@@ -103,13 +103,10 @@ bias of success probability estimation.
 }
 
 \examples{
-set.seed(100);x <- c(rgamma(10000,2,0.05),rnorm(200,50,1)) ## generate data
+set.seed(100);x <- c(rgamma(5000,2,0.05),rnorm(200,50,1)) ## generate data
 res <- ultimate_detct(x, HRR_kernel = "gaussian", est_fun = "sbsp",
-                      n_hz_sample = 50, n_hz_size = 200, MLE_unit = 5,
+                      n_hz_sample = 50, n_hz_size = 100, MLE_unit = 5,
                       x_unit = 0.001)
-
-res <- ultimate_detct(x, HRR_kernel = "triangular",
-                      hazard_bandwidth = 0.2, MLE_unit = 5, x_unit = 0.001)
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.

@@ -1,7 +1,7 @@
 Package: AnomDetct
 Type: Package
 Title: Anomaly Detection via Scan Statistics
-Version: 0.0.0.9000
+Version: 0.0.1
 Depends: R(>= 3.6),
 	 stats(>= 3.6.1)
 Authors@R: c(person("Zhicong", "Zhao", role = c("aut", "cre"),
@@ -17,7 +17,7 @@ Suggests: ggplot2 (>= 2.2.1),
           Matrix (>= 1.2-12), 
           parallel (>= 3.4.4), 
           POT (>= 1.1-6)
-License: GPL-3 + file LICENSE
+License: file LICENSE
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 6.1.1

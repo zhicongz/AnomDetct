@@ -17,7 +17,7 @@ tran_detct(x, theta_th=1, theta_0 = theta_th, alpha_lvl=0.05,
            n_hz_sample = NULL, n_hz_size = NULL,
            pt_int = seq(0,1,by = 0.05),
            seq_theta = seq(0.5, 1, by = 0.05)*theta_0/theta_th,
-           x_unit = 0.01, plot_unit = 1, MLE_unit = 1,
+           x_unit = 0.01, plot_unit = 1, MLE_unit = 0.01,
            plt_mgn = 0, max_rec = 3, tail_obs = 50)
 }
 %- maybe also 'usage' for other objects documented here.
@@ -131,7 +131,7 @@ set.seed(100);x <- c(rgamma(5000,2,0.05),
                      runif(20,100,101))## generate data
 
 res_rec <- tran_detct(x,loc = 30, HRR_kernel = "gaussian", est_fun = "sbsp",
-                      n_hz_sample = 40, n_hz_size = 100, MLE_unit = 5,
+                      n_hz_sample = 20, n_hz_size = 50, MLE_unit = 5,
                       x_unit = 0.001,
                       hazard_bandwidth = 0.2) ## recursive result
 }

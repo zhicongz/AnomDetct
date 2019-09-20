@@ -78,13 +78,13 @@ details of hazard rate ratio estimation function.
 \examples{
 ## HRR_sbsp_est is faster than HRR_pt_est
 # system.time({HRR_bstp_lb(600, seq(0,1,0.1),
-#              hazard_bandwidth = 0.1, mc_rep = 10, c_l = 0.05,
+#              hazard_bandwidth = 0.1, mc_rep = 100, c_l = 0.05,
 #              est_fun = "pt")}) ## HRR_pt_est
 
-system.time({HRR_bstp_lb(600, seq(0,1,0.1),
-             hazard_bandwidth = 0.1, mc_rep = 10, c_l = 0.05,
-             est_fun = "sbsp", n_hz_sample = 50,
-             n_hz_size = 50)}) ## HRR_sbsp_est
+# system.time({HRR_bstp_lb(600, seq(0,1,0.1),
+#              hazard_bandwidth = 0.1, mc_rep = 100, c_l = 0.05,
+#              est_fun = "sbsp", n_hz_sample = 30,
+#              n_hz_size = 50)}) ## HRR_sbsp_est
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.

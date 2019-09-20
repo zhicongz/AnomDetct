@@ -184,7 +184,7 @@ tran_detct <- function(x, theta_th=1, theta_0 = theta_th, alpha_lvl=0.05,
                        n_hz_sample = NULL, n_hz_size = NULL,
                        pt_int = seq(0,1,by = 0.05),
                        seq_theta = seq(0.5, 1, by = 0.05)*theta_0/theta_th,
-                       x_unit = 0.01, plot_unit = 1, MLE_unit = 1,
+                       x_unit = 0.01, plot_unit = 1, MLE_unit = 0.01,
                        plt_mgn = 0, max_rec = 3, tail_obs = 50){
   if(!requireNamespace("POT", quietly = TRUE)) stop("Need package POT")
 

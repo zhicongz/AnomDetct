@@ -126,17 +126,12 @@ needs to be installed first.
 }
 
 \examples{
-set.seed(100);x <- c(rgamma(10000,2,0.05),
-                     runif(200,50,51),
-                     runif(40,100,101))## generate data
-
-res_no_rec <- ultimate_detct(x, HRR_kernel = "gaussian", est_fun = "sbsp",
-                             n_hz_sample = 50, n_hz_size = 200, MLE_unit = 5,
-                             x_unit = 0.001,
-                             hazard_bandwidth = 0.2) ## no recursive result
+set.seed(100);x <- c(rgamma(5000,2,0.05),
+                     runif(100,50,51),
+                     runif(20,100,101))## generate data
 
 res_rec <- tran_detct(x,loc = 30, HRR_kernel = "gaussian", est_fun = "sbsp",
-                      n_hz_sample = 50, n_hz_size = 200, MLE_unit = 5,
+                      n_hz_sample = 50, n_hz_size = 100, MLE_unit = 5,
                       x_unit = 0.001,
                       hazard_bandwidth = 0.2) ## recursive result
 }

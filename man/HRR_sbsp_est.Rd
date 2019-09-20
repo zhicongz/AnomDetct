@@ -50,7 +50,7 @@ the accuracy is maintained by large \code{n_hz_sample}. It is similar as the
 }
 \examples{
 temp <- HRR_sbsp_est(pt_int = seq(0,1,0.1),
-                     cdf = sort(rbeta(10000,2,5)),
+                     cdf = sort(rbeta(5000,2,5)),
                      kernel = "triangular",
                      hazard_bandwidth = 0.1,
                      n_hz_sample = 30)

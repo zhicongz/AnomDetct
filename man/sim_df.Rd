@@ -29,9 +29,9 @@ hypothesis can still be able to detect those.
 
 \examples{
 ## applied tran_detct on sampled data
-set.seed(100)
-tran_detct(sim_df_D,loc = 10,HRR_kernel = "gaussian", est_fun = "sbsp",
-           n_hz_sample = 20, n_hz_size = 50, MLE_unit = 0.01,
-           x_unit = 0.001, hazard_bandwidth = 0.2, tail_obs = 200)
+set.seed(100); x <- sample(sim_df_D, 500)
+tran_detct(x,loc = 10,HRR_kernel = "triangular", est_fun = "pt",
+           MLE_unit = 1, x_unit = 0.001,
+           hazard_bandwidth = 0.1, tail_obs = 100)
 }
 \keyword{datasets}

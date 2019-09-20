@@ -126,7 +126,7 @@ needs to be installed first.
 }
 
 \examples{
-set.seed(100);x <- c(rgamma(5000,2,0.05),
+set.seed(100);x <- c(rgamma(4000,2,0.05),
                      runif(100,50,51),
                      runif(20,100,101))## generate data
 

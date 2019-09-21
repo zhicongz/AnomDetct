@@ -308,7 +308,7 @@ tran_detct <- function(x, theta_th=1, theta_0 = theta_th, alpha_lvl=0.05,
 
   return(list(Total = total,
               Cluster = clst_out,
-              plot = my_plot))
+              Plot = my_plot))
 }
 ultimate_detct <- function(x, theta_th=1, theta_0 = theta_th,
                            alpha_lvl = 0.05, anom_est_alpha_lvl = 0.05,

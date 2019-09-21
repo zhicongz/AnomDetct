@@ -98,9 +98,12 @@ the remaining tails with new \code{loc} and \code{window length}. The function
 stops when recursive attaches the \code{max_rec} or number of tail observations
 is less than \code{tail_obs} or no new clusters are detected.
 
-\code{max_rec} not need to be too large because with Bonferroni method, the
-significance level of clusters goes up fast. Calcuate the true
-significance level of multiple window length scanning is a future work topic.
+\code{max_rec} should not be too large because with Bonferroni method, the
+significance level of clusters goes up fast. Also, the recursive is a
+sequential process because the starting point of the next scannning depends on
+previous scanning results. The method will take a long time if \code{max_rec}
+is large.
+Multiple window length scanning will be a future work topic.
 %%  ~~ If necessary, more details than the description above ~~
 }
 \value{This function returns a list with components:
@@ -108,7 +111,7 @@ significance level of multiple window length scanning is a future work topic.
   \item{Cluster}{A matrix where first two columns are boundaries of clusters
   and thire column is the corresponding p-value. Notice that clusters are
   not necessary to be exclusive.}
-  \item{plot}{The plot.}
+  \item{Plot}{The plot.}
 %%  ~Describe the value returned
 %%  If it is a LIST, use
 %%  \item{comp1 }{Description of 'comp1'}

@@ -14,7 +14,7 @@ prob_fun_mc(N,k,m,p,mc_rep)
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{N}{number of Bernoulli trials.}
-  \item{k}{scan statistics quantile.}
+  \item{k}{a number or numeric vector represents scan statistics quantile(s).}
   \item{m}{scan statistics window length.}
   \item{p}{success probabiliy for each Bernoulli trial under null hypothesis.}
   \item{mc_rep}{number of replications.}
@@ -26,8 +26,8 @@ the true value but a longer time it will take to obtain the result.
 This is a tradeoff between accuracy and efficiency.
 \cr
 \cr
-\code{N}, \code{k}, \code{m}, \code{mc_rep} are all integers, where
-\eqn{m > 0}, \eqn{0 \le k \le m} and \eqn{N/m > 5}.
+\code{N}, \code{m}, \code{mc_rep} are all integers, where
+\eqn{m > 0}, \eqn{0 \le min(k) \le max(k) \le m} and \eqn{N/m > 5}.
 \cr
 \code{p} is a real number where \eqn{0 < p \le 1}.
 %%  ~~ If necessary, more details than the description above ~~
@@ -53,7 +53,8 @@ This is a tradeoff between accuracy and efficiency.
 }
 \examples{
 ## estimate running time ##
-system.time({q_value <- prob_fun_mc(1000,5,10,0.1,10000)})
+set.seed(100)
+system.time({q_value <- prob_fun_mc(1000,4:6,10,0.1,10000)})
 q_value
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the

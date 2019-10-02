@@ -83,11 +83,12 @@ scan statistics viewed as extremes of 1-dependent stationary sequences.
 q1_function(5,10,0.2)
 
 ## compare Monte Carlo simulations and 1-dependent stationary sequences ##
+set.seed(100)
 p_MC <- mapply(prob_fun_mc,c(100,500,1000,5000,10000),
                MoreArgs = list(N = 1000,k = 5,m = 10,p=0.1))
 p_Haiman <- prob_fun(1000,5,10,0.1)
 plot(c(100,500,1000,5000,10000), p_MC,col = "blue",type = "l",
-     xlab = "MC replicate times",ylab = "q_values",xlim = c(0.9,1))
+     xlab = "MC replicate times",ylab = "q_values",ylim = c(0.9,1))
 abline(h = p_Haiman, col = "red")
 legend("topleft",legend = c("MC","Haiman"),col = c("blue","red"),lty = 1)
 }

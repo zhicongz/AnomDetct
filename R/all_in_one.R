@@ -183,7 +183,7 @@ tran_detct <- function(x, theta_th=1, theta_0 = theta_th, alpha_lvl=0.05,
                        hazard_bandwidth=0.1, knn = NULL, est_fun = "pt",
                        n_hz_sample = NULL, n_hz_size = NULL,
                        pt_int = seq(0,1,by = 0.05),
-                       seq_theta = seq(0.5, 1, by = 0.05)*theta_0/theta_th,
+                       seq_theta = seq(0.5, 1, by = 0.05)*theta_0,
                        x_unit = 0.01, plot_unit = 1, MLE_unit = 0.01,
                        plt_mgn = 0, max_rec = 3, tail_obs = 50){
   if(!requireNamespace("POT", quietly = TRUE)) stop("Need package POT")
@@ -230,9 +230,9 @@ tran_detct <- function(x, theta_th=1, theta_0 = theta_th, alpha_lvl=0.05,
     window_lth <- max(window_Haiman,window_MLE)
 
     if(cur_rec == 0){
-      min_crit <- crit_theta_fun(N,window_lth,1-exp(-theta_th),alpha_lvl)
-      q_values <- mapply(prob_fun,1-exp(-seq_theta/theta_0*theta_th),
-                         N = N, k = min_crit,m = window_lth)
+      min_crit <- crit_theta_fun(N-1,window_lth,1-exp(-theta_th),alpha_lvl)
+      q_values <- mapply(prob_fun,1-exp(-seq_theta/theta_0),
+                         N = N-1, k = min_crit,m = window_lth)
       p_values <- mapply(max, 1 - q_values, 0)
 
       if(est_fun == "pt"){
@@ -265,9 +265,9 @@ tran_detct <- function(x, theta_th=1, theta_0 = theta_th, alpha_lvl=0.05,
       }
       cur_rec <- cur_rec + 1
     }else{
-      min_crit <- crit_theta_fun(N,window_lth,1-exp(-theta_th),alpha_lvl)
-      q_values_temp <- mapply(prob_fun,1-exp(-seq_theta/theta_0*theta_th),
-                              N = N, k = min_crit,m = window_lth)
+      min_crit <- crit_theta_fun(N-1,window_lth,1-exp(-theta_th),alpha_lvl)
+      q_values_temp <- mapply(prob_fun,1-exp(-seq_theta/theta_0),
+                              N = N-1, k = min_crit,m = window_lth)
 
       p_values <- mapply(min,
                          mapply(max, 1 - q_values_temp, 0) + p_values,
@@ -316,7 +316,7 @@ ultimate_detct <- function(x, theta_th=1, theta_0 = theta_th,
                            hazard_bandwidth = 0.1, knn = NULL, est_fun = "pt",
                            n_hz_sample = NULL, n_hz_size = NULL,
                            pt_int = seq(0,1,by = 0.05), window_lth = NA,
-                           seq_theta = seq(0.5, 1, by = 0.05)*theta_0/theta_th,
+                           seq_theta = seq(0.5, 1, by = 0.05)*theta_0,
                            x_unit = 0.01, plot_unit = 1, MLE_unit = 1,
                            plt_mgn = 0){
   N <- length(x)
@@ -338,10 +338,9 @@ ultimate_detct <- function(x, theta_th=1, theta_0 = theta_th,
                        ")",sep = "")
   cdf_x <- eval(parse(text = str_convert))
 
+  window_Haiman <- Haiman_window_lth(N, 1-exp(-theta_th), alpha_lvl,
+                                     lower_wl=2, upper_wl=100)
   if(is.na(window_lth)){
-    window_Haiman <- Haiman_window_lth(N, 1-exp(-theta_th), alpha_lvl,
-                                       lower_wl=2, upper_wl=100)
-
     str_MLE_lth <- paste("MLE_window_lth(x,dist_null = '",dist_info[[1]],"',",
                          paste(dist_info[[2]],collapse = ","),
                          ",unit = ", MLE_unit,
@@ -350,11 +349,17 @@ ultimate_detct <- function(x, theta_th=1, theta_0 = theta_th,
     window_MLE <- eval(parse(text = str_MLE_lth))
 
     window_lth <- max(window_Haiman,window_MLE)
+  }else{
+    if(window_lth < window_Haiman){
+      warning(paste("Too small `window_lth`, enlarge to", window_Haiman,
+                    sep = ""))
+      window_lth <- window_Haiman
+    }
   }
 
-  min_crit <- crit_theta_fun(N, window_lth, 1-exp(-theta_th), alpha_lvl)
-  q_values <- mapply(prob_fun,1-exp(-seq_theta/theta_0*theta_th),
-                     N = N, k = min_crit,m = window_lth)
+  min_crit <- crit_theta_fun(N-1, window_lth, 1-exp(-theta_th), alpha_lvl)
+  q_values <- mapply(prob_fun,1-exp(-seq_theta/theta_0),
+                     N = N-1, k = min_crit,m = window_lth)
 
   if(est_fun == "pt"){
     density_est <- HRR_pt_est(pt_int, cdf_x, HRR_kernel, hazard_bandwidth, knn)
@@ -367,7 +372,6 @@ ultimate_detct <- function(x, theta_th=1, theta_0 = theta_th,
   HRR_fun  <- density_est$HRR
 
   HRR <- HRR_fun(cdf_x)
-
   clst <- mapply(hypo_test, seq_theta,
                  MoreArgs = list(cdf = cdf_x,
                                  HRR = HRR,
@@ -399,10 +403,10 @@ ultimate_detct <- function(x, theta_th=1, theta_0 = theta_th,
               plot = my_plot))
 }
 fit_dist <- function(x,dist_null = NA,...){
-  oldw <- getOption("warn")
-  options(warn = -1)
+  if(length(x)==0)
+    stop("no enough observations")
 
-  if(min(x)>0)sum_log_x <- sum(log(x))
+  if(min(x)>0) sum_log_x <- sum(log(x))
   sum_x <- sum(x)
   if(is.na(dist_null)){
     list_normal <- list(stats::ks.test(x,stats::pnorm,
@@ -418,7 +422,10 @@ fit_dist <- function(x,dist_null = NA,...){
       l <- para[1]
       s <- para[2]
       n <- length(x)
-      return(n*log(pi*s) + sum(log(1+((x-l)/s)^2)))
+      if(s<=0)
+        return(NA)
+      else
+        return(n*log(pi*s) + sum(log(1+((x-l)/s)^2)))
     }
 
     para_hat <- tryCatch(stats::optim(par = c(1,1), fn = cauchy_den,
@@ -439,7 +446,10 @@ fit_dist <- function(x,dist_null = NA,...){
       l <- para[1]
       s <- para[2]
       n <- length(x)
-      return(n*log(s) - sum((x-l)/s) + 2*sum(log(1+exp((x-l)/s))))
+      if(s<=0)
+        return(NA)
+      else
+        return(n*log(s) - sum((x-l)/s) + 2*sum(log(1+exp((x-l)/s))))
     }
 
     para_hat <- tryCatch(stats::optim(par = c(1,1), fn = logis_den,
@@ -457,12 +467,15 @@ fit_dist <- function(x,dist_null = NA,...){
 
     t_den <- function(v){
       n <- length(x)
-      return(-n*log(gamma((v+1)/2)/sqrt(v*pi)/gamma(v/2)) +
-               (v+1)/2*sum(log(1+x^2/v)))
+      if(v <= 0)
+        return(NA)
+      else
+        return(-n*log(gamma((v+1)/2)/sqrt(v*pi)/gamma(v/2)) +
+                 (v+1)/2*sum(log(1+x^2/v)))
     }
 
-    para_hat <- tryCatch(stats::optim(par = c(1,1), fn = t_den,
-                                      method = "L-BFGS-B",lower = c(-Inf,0))$par,
+    para_hat <- tryCatch(stats::optim(par = 1, fn = t_den,
+                                      method = "L-BFGS-B",lower = 0)$par,
                          error = function(e) NA)
 
     if(is.na(para_hat[1])){
@@ -473,14 +486,17 @@ fit_dist <- function(x,dist_null = NA,...){
                      para_hat)
     }
 
-    candid <- list(list_normal,list_unif,list_cauchy,list_logis)
+    candid <- list(list_normal,list_unif,list_cauchy,list_logis,list_t)
 
     if(min(x)>0){
       gamma_den <- function(para){
         alp <- para[1]
         bet <- para[2]
         n <- length(x)
-        return(-(n*alp*log(bet)-n*log(gamma(alp))+(alp-1)*sum_log_x-bet*sum_x))
+        if(alp<=0 || bet <=0)
+          return(NA)
+        else
+          return(-(n*alp*log(bet)-n*log(gamma(alp))+(alp-1)*sum_log_x-bet*sum_x))
       }
 
       para_hat <- tryCatch(stats::optim(par = c(1,1), fn = gamma_den,
@@ -498,7 +514,10 @@ fit_dist <- function(x,dist_null = NA,...){
 
       chisq_den <- function(p){
         n <- length(x)
-        return(log(gamma(p/2)) + n*p/2*log(2) - (p/2-1)*sum_log_x + sum_x/2)
+        if(p<=0)
+          return(NA)
+        else
+          return(log(gamma(p/2)) + n*p/2*log(2) - (p/2-1)*sum_log_x + sum_x/2)
       }
 
       para_hat <- tryCatch(stats::optim(par = 1, fn = chisq_den,
@@ -515,7 +534,10 @@ fit_dist <- function(x,dist_null = NA,...){
 
       exp_den <- function(lambda){
         n <- length(x)
-        return(-n*log(lambda) + lambda*sum_x)
+        if(lambda<=0)
+          return(NA)
+        else
+          return(-n*log(lambda) + lambda*sum_x)
       }
 
       para_hat <- tryCatch(stats::optim(par = 1, fn = exp_den,
@@ -534,9 +556,12 @@ fit_dist <- function(x,dist_null = NA,...){
         n1 <- para[1]
         n2 <- para[2]
         n <- length(x)
-        return(-n*log(gamma((n1+n2)/2)/(gamma(n1/2)*gamma(n2/2))) -
-                 n*n1/2*log((n1/n2)) - (n1/2-1)*sum_log_x +
-                 (n1+n2)/2*sum(log(1+n1/n2*x)))
+        if(n1<=0 || n2<=0)
+          return(NA)
+        else
+          return(-n*log(gamma((n1+n2)/2)/(gamma(n1/2)*gamma(n2/2))) -
+                   n*n1/2*log((n1/n2)) - (n1/2-1)*sum_log_x +
+                   (n1+n2)/2*sum(log(1+n1/n2*x)))
       }
 
       para_hat <- tryCatch(stats::optim(par = c(1,1), fn = f_den,
@@ -556,7 +581,10 @@ fit_dist <- function(x,dist_null = NA,...){
         l <- para[1]
         s <- para[2]
         n <- length(x)
-        return(sum_log_x + n*log(s*sqrt(2*pi)) + sum((log(x)-l)^2/(2*s^2)))
+        if(l<=0 || s<= 0)
+          return(NA)
+        else
+          return(sum_log_x + n*log(s*sqrt(2*pi)) + sum((log(x)-l)^2/(2*s^2)))
       }
 
       para_hat <- tryCatch(stats::optim(par = c(1,1), fn = lnorm_den,
@@ -576,7 +604,10 @@ fit_dist <- function(x,dist_null = NA,...){
         a <- para[1]
         b <- para[2]
         n <- length(x)
-        return(-n*log(a/b)-(a-1)*sum(log(x/b))+sum((x/b)^a))
+        if(a<=0 || b<=0)
+          return(NA)
+        else
+          return(-n*log(a/b)-(a-1)*sum(log(x/b))+sum((x/b)^a))
       }
 
       para_hat <- tryCatch(stats::optim(par = c(1,1), fn = weibull_den,
@@ -600,8 +631,11 @@ fit_dist <- function(x,dist_null = NA,...){
           alp <- para[1]
           bet <- para[2]
           n <- length(x)
-          return(-(n*log(gamma(alp+bet)/(gamma(alp)*gamma(bet))) +
-                     (alp-1)*sum_log_x + (bet-1)*sum(log(1-x))))
+          if(alp<=0 || bet<=0)
+            return(NA)
+          else
+            return(-(n*log(gamma(alp+bet)/(gamma(alp)*gamma(bet))) +
+                       (alp-1)*sum_log_x + (bet-1)*sum(log(1-x))))
         }
 
         para_hat <- tryCatch(stats::optim(par = c(1,1), fn = beta_den,
@@ -619,7 +653,6 @@ fit_dist <- function(x,dist_null = NA,...){
         candid <- c(candid,list(list_beta))
       }
     }
-    options(warn = oldw)
 
     max_ind <- which.max(sapply(candid,function(x)x[[1]]))
     return(list(dist = candid[[max_ind]][[2]],
@@ -632,7 +665,7 @@ fit_dist <- function(x,dist_null = NA,...){
     }else{
       stop("Need to install POT package")
     }
-    return(list(dist = dist_null, para = c(...,para_hat)))
+    return(list(dist = dist_null, para = para_hat))
   }else if(dist_null == "norm"){
     return(list(dist = dist_null, para = c(mean(x),stats::sd(x))))
   }else if(dist_null == "unif"){
@@ -642,7 +675,10 @@ fit_dist <- function(x,dist_null = NA,...){
       alp <- para[1]
       bet <- para[2]
       n <- length(x)
-      return(-(n*alp*log(bet)-n*log(gamma(alp))+(alp-1)*sum_log_x-bet*sum_x))
+      if(alp<=0 || bet <=0)
+        return(NA)
+      else
+        return(-(n*alp*log(bet)-n*log(gamma(alp))+(alp-1)*sum_log_x-bet*sum_x))
     }
 
     para_hat <- stats::optim(par = c(1,1), fn = gamma_den,
@@ -652,7 +688,10 @@ fit_dist <- function(x,dist_null = NA,...){
   }else if(dist_null == "chisq"){
     chisq_den <- function(p){
       n <- length(x)
-      return(log(gamma(p/2)) + n*p/2*log(2) - (p/2-1)*sum_log_x + sum_x/2)
+      if(p<=0)
+        return(NA)
+      else
+        return(log(gamma(p/2)) + n*p/2*log(2) - (p/2-1)*sum_log_x + sum_x/2)
     }
 
     para_hat <- stats::optim(par = 1, fn = chisq_den,
@@ -664,8 +703,11 @@ fit_dist <- function(x,dist_null = NA,...){
       alp <- para[1]
       bet <- para[2]
       n <- length(x)
-      return(-(n*log(gamma(alp+bet)/(gamma(alp)*gamma(bet))) +
-                 (alp-1)*sum_log_x + (bet-1)*sum(log(1-x))))
+      if(alp<=0 || bet<=0)
+        return(NA)
+      else
+        return(-(n*log(gamma(alp+bet)/(gamma(alp)*gamma(bet))) +
+                   (alp-1)*sum_log_x + (bet-1)*sum(log(1-x))))
     }
 
     para_hat <- stats::optim(par = c(1,1), fn = beta_den,
@@ -677,7 +719,10 @@ fit_dist <- function(x,dist_null = NA,...){
       l <- para[1]
       s <- para[2]
       n <- length(x)
-      return(n*log(pi*s) + sum(log(1+((x-l)/s)^2)))
+      if(s<=0)
+        return(NA)
+      else
+        return(n*log(pi*s) + sum(log(1+((x-l)/s)^2)))
     }
 
     para_hat <- stats::optim(par = c(1,1), fn = cauchy_den,
@@ -687,7 +732,10 @@ fit_dist <- function(x,dist_null = NA,...){
   }else if(dist_null == "exp"){
     exp_den <- function(lambda){
       n <- length(x)
-      return(-n*log(lambda) + lambda*sum_x)
+      if(lambda<=0)
+        return(NA)
+      else
+        return(-n*log(lambda) + lambda*sum_x)
     }
 
     para_hat <- stats::optim(par = 1, fn = exp_den,
@@ -699,9 +747,12 @@ fit_dist <- function(x,dist_null = NA,...){
       n1 <- para[1]
       n2 <- para[2]
       n <- length(x)
-      return(-n*log(gamma((n1+n2)/2)/(gamma(n1/2)*gamma(n2/2))) -
-               n*n1/2*log((n1/n2)) - (n1/2-1)*sum_log_x +
-               (n1+n2)/2*sum(log(1+n1/n2*x)))
+      if(n1<=0 || n2<=0)
+        return(NA)
+      else
+        return(-n*log(gamma((n1+n2)/2)/(gamma(n1/2)*gamma(n2/2))) -
+                 n*n1/2*log((n1/n2)) - (n1/2-1)*sum_log_x +
+                 (n1+n2)/2*sum(log(1+n1/n2*x)))
     }
 
     para_hat <- stats::optim(par = c(1,1), fn = f_den,
@@ -713,7 +764,10 @@ fit_dist <- function(x,dist_null = NA,...){
       l <- para[1]
       s <- para[2]
       n <- length(x)
-      return(n*log(s) - sum((x-l)/s) + 2*sum(log(1+exp((x-l)/s))))
+      if(s<=0)
+        return(NA)
+      else
+        return(n*log(s) - sum((x-l)/s) + 2*sum(log(1+exp((x-l)/s))))
     }
 
     para_hat <- stats::optim(par = c(1,1), fn = logis_den,
@@ -725,7 +779,10 @@ fit_dist <- function(x,dist_null = NA,...){
       l <- para[1]
       s <- para[2]
       n <- length(x)
-      return(sum_log_x + n*log(s*sqrt(2*pi)) + sum((log(x)-l)^2/(2*s^2)))
+      if(l<=0 || s<= 0)
+        return(NA)
+      else
+        return(sum_log_x + n*log(s*sqrt(2*pi)) + sum((log(x)-l)^2/(2*s^2)))
     }
 
     para_hat <- stats::optim(par = c(1,1), fn = lnorm_den,
@@ -735,8 +792,11 @@ fit_dist <- function(x,dist_null = NA,...){
   }else if(dist_null == "t"){
     t_den <- function(v){
       n <- length(x)
-      return(-n*log(gamma((v+1)/2)/sqrt(v*pi)/gamma(v/2)) +
-               (v+1)/2*sum(log(1+x^2/v)))
+      if(v <= 0)
+        return(NA)
+      else
+        return(-n*log(gamma((v+1)/2)/sqrt(v*pi)/gamma(v/2)) +
+                 (v+1)/2*sum(log(1+x^2/v)))
     }
 
     para_hat <- stats::optim(par = 1, fn = t_den,
@@ -748,7 +808,10 @@ fit_dist <- function(x,dist_null = NA,...){
       a <- para[1]
       b <- para[2]
       n <- length(x)
-      return(-n*log(a/b)-(a-1)*sum(log(x/b))+sum((x/b)^a))
+      if(a<=0 || b<=0)
+        return(NA)
+      else
+        return(-n*log(a/b)-(a-1)*sum(log(x/b))+sum((x/b)^a))
     }
 
     para_hat <- stats::optim(par = c(1,1), fn = weibull_den,
@@ -1246,7 +1309,7 @@ prob_fun_mc <- function(N,k,m,p,mc_rep){
     res <- sapply(seq.int(mc_rep),mc_each)
   }
 
-  return(mean(res<=k))
+  return(sapply(k, function(i)mean(res<=i)))
 }
 q1_function <- function(k,m,p){
   if(k>=0 & m>=k & p>=0 & p<=1){

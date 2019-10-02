@@ -186,7 +186,8 @@ tran_detct <- function(x, theta_th=1, theta_0 = theta_th, alpha_lvl=0.05,
                        seq_theta = seq(0.5, 1, by = 0.05)*theta_0,
                        x_unit = 0.01, plot_unit = 1, MLE_unit = 0.01,
                        plt_mgn = 0, max_rec = 3, tail_obs = 50){
-  if(!requireNamespace("POT", quietly = TRUE)) stop("Need package POT")
+  if(!requireNamespace("POT", quietly = TRUE))
+    stop("Need package POT", call. = F)
 
   cur_rec <- 0
   while (cur_rec < max_rec){
@@ -221,7 +222,7 @@ tran_detct <- function(x, theta_th=1, theta_0 = theta_th, alpha_lvl=0.05,
     if (N <= tail_obs){
       break
     }
-    window_Haiman <- Haiman_window_lth(N, p = 1-exp(-theta_th),
+    window_Haiman <- Haiman_window_lth(N-1, p = 1-exp(-theta_th),
                                        alpha_lvl, lower_wl=2, upper_wl=100)
 
     window_MLE <- MLE_window_lth(x,dist_null = "gpd",loc = loc,
@@ -241,7 +242,7 @@ tran_detct <- function(x, theta_th=1, theta_0 = theta_th, alpha_lvl=0.05,
       }else if(est_fun == "sbsp"){
         density_est <- HRR_sbsp_est(pt_int, cdf_x, HRR_kernel, hazard_bandwidth,
                                     knn, n_hz_sample, n_hz_size)
-      }else stop("Invalid est_fun")
+      }else stop("Invalid `est_fun`", call. = F)
 
       fhat_fun <- density_est$fhat
       HRR_fun  <- density_est$HRR
@@ -319,6 +320,8 @@ ultimate_detct <- function(x, theta_th=1, theta_0 = theta_th,
                            seq_theta = seq(0.5, 1, by = 0.05)*theta_0,
                            x_unit = 0.01, plot_unit = 1, MLE_unit = 1,
                            plt_mgn = 0){
+  if(theta_th<=0) stop("Invalid `theta_th`", call. = F)
+
   N <- length(x)
 
   x <- sort(x,decreasing = F)
@@ -338,7 +341,7 @@ ultimate_detct <- function(x, theta_th=1, theta_0 = theta_th,
                        ")",sep = "")
   cdf_x <- eval(parse(text = str_convert))
 
-  window_Haiman <- Haiman_window_lth(N, 1-exp(-theta_th), alpha_lvl,
+  window_Haiman <- Haiman_window_lth(N-1, 1-exp(-theta_th), alpha_lvl,
                                      lower_wl=2, upper_wl=100)
   if(is.na(window_lth)){
     str_MLE_lth <- paste("MLE_window_lth(x,dist_null = '",dist_info[[1]],"',",
@@ -366,7 +369,7 @@ ultimate_detct <- function(x, theta_th=1, theta_0 = theta_th,
   }else if(est_fun == "sbsp"){
     density_est <- HRR_sbsp_est(pt_int, cdf_x, HRR_kernel, hazard_bandwidth,
                                 knn, n_hz_sample, n_hz_size)
-  }else stop("Invalid est_fun")
+  }else stop("Invalid `est_fun`", call. = F)
 
   fhat_fun <- density_est$fhat
   HRR_fun  <- density_est$HRR
@@ -404,7 +407,7 @@ ultimate_detct <- function(x, theta_th=1, theta_0 = theta_th,
 }
 fit_dist <- function(x,dist_null = NA,...){
   if(length(x)==0)
-    stop("no enough observations")
+    stop("No enough observations", call. = F)
 
   if(min(x)>0) sum_log_x <- sum(log(x))
   sum_x <- sum(x)
@@ -663,7 +666,7 @@ fit_dist <- function(x,dist_null = NA,...){
     if(requireNamespace("POT", quietly = TRUE)){
       para_hat <- POT::fitgpd(x,...)$param
     }else{
-      stop("Need to install POT package")
+      stop("Need POT package", call. = F)
     }
     return(list(dist = dist_null, para = para_hat))
   }else if(dist_null == "norm"){
@@ -862,7 +865,7 @@ HRR_bstp_lb <- function(N, pt_int, kernel = "gaussian", hazard_bandwidth = NULL,
                                     n_hz_sample = n_hz_sample,
                                     n_hz_size   = n_hz_size),SIMPLIFY = F)
     }
-  }else stop("Invalid est_fun")
+  }else stop("Invalid `est_fun`", call. = F)
 
   HRR  <- sapply(res, function(x)x[[2]](pt_int))
   max_ratio <- apply(HRR,2,max)
@@ -914,7 +917,7 @@ F_exp <- function(a, b, N, fhat = NULL, unit = b-a,
         y <- POT::pgpd(x_pt, ...)
         exp_density <- POT::dgpd(x_pt, ...)
       }else{
-        stop("Need package POT")
+        stop("Need package POT", call. = F)
       }
     }else{
       my_str <- paste("stats::p",dist_null,"(x_pt,...)",sep = "")
@@ -932,7 +935,7 @@ F_exp <- function(a, b, N, fhat = NULL, unit = b-a,
   }
 
   if(a==b) return(0)
-  if(unit>b-a) stop("need smaller unit")
+  if(unit>b-a) stop("Need smaller `unit`")
   pt_int <- seq(a, b, by = unit)
   if((b-a)%%unit!=0) pt_int <- c(pt_int, b)
   return(sum(sapply(seq.int(length(pt_int)-1),
@@ -944,7 +947,7 @@ cdf_convert <- function(x, dist_null, ...){
     if(requireNamespace("POT", quietly = TRUE)){
       cdf_x <- POT::pgpd(x, ...)
     }else{
-      stop("Need package POT")
+      stop("Need package POT", call. = F)
     }
   }else{
     my_str <- paste("p",dist_null,"(x, ...)",sep = "")
@@ -954,7 +957,7 @@ cdf_convert <- function(x, dist_null, ...){
 }
 MLE_window_lth <- function(x,dist_null,..., unit = 1){
   if(unit<=0 | is.infinite(unit)){
-    stop("Unit needs to be positive finite number")
+    stop("`unit` needs to be positive finite number")
   }
 
   y <- x/unit
@@ -966,7 +969,7 @@ MLE_window_lth <- function(x,dist_null,..., unit = 1){
     if(requireNamespace("POT", quietly = TRUE)){
       exp_cnt <- diff(POT::pgpd(breaks, ...))
     }else{
-      stop("Need package POT")
+      stop("Need package POT", call. = F)
     }
   }else{
     my_str <- paste("p",dist_null,"(breaks, ...)",sep = "")
@@ -1054,7 +1057,7 @@ HRR_pt_est <- function(pt_int,cdf_sample,kernel = "gaussian",
       cdf_ext <- c(rev(-cdf_sample),cdf_sample,rev(2-cdf_sample))
       Yhat <- (1:length(cdf_ext))/length(cdf_ext)
       if (kernel == "gaussian"){
-        if(is.null(hazard_bandwidth))stop("Need hazard_bandwidth")
+        if(is.null(hazard_bandwidth))stop("Need `hazard_bandwidth`", call. = F)
         Wp       <- diag(sqrt(stats::dnorm((cdf_ext-pt)/bandwidth)))
         dsg_mtx  <- cbind(rep(1,length(cdf_ext)),
                           (cdf_ext-pt),
@@ -1063,7 +1066,7 @@ HRR_pt_est <- function(pt_int,cdf_sample,kernel = "gaussian",
         X_mtx    <- Wp %*% dsg_mtx
         beta_hat <- Matrix::solve(t(X_mtx)%*%X_mtx, t(X_mtx)%*%Wp%*%Yhat)
       }else if (kernel == "rectangular"){
-        if(is.null(hazard_bandwidth))stop("Need hazard_bandwidth")
+        if(is.null(hazard_bandwidth))stop("Need `hazard_bandwidth`", call. = F)
         index <- abs(cdf_ext-pt) < bandwidth/2
 
         cdf_sample  <- cdf_ext[index]
@@ -1090,7 +1093,7 @@ HRR_pt_est <- function(pt_int,cdf_sample,kernel = "gaussian",
                                     t(X_mtx)%*%Yhat_sample)
         }
       }else if (kernel == "triangular"){
-        if(is.null(hazard_bandwidth))stop("Need hazard_bandwidth")
+        if(is.null(hazard_bandwidth))stop("Need `hazard_bandwidth`", call. = F)
         index <- abs(cdf_ext-pt)<bandwidth/2
 
         cdf_sample  <- cdf_ext[index]
@@ -1124,8 +1127,8 @@ HRR_pt_est <- function(pt_int,cdf_sample,kernel = "gaussian",
                                     t(X_mtx)%*%Wp%*%Yhat_sample)
         }
       }else if (kernel == "knn"){
-        if(is.null(knn))stop("Need knn")
-        if(knn<=3)stop("Need larger knn")
+        if(is.null(knn))stop("Need `knn`", call. = F)
+        if(knn<=3)stop("Need larger `knn`", call. = F)
         dist <- abs(cdf_ext-pt)
         index <- order(dist)[1:knn]
 
@@ -1136,7 +1139,7 @@ HRR_pt_est <- function(pt_int,cdf_sample,kernel = "gaussian",
         beta_hat <- Matrix::solve(t(X_mtx)%*%X_mtx,
                                   t(X_mtx)%*%Yhat_sample)
       }else{
-        stop("Invalid kernel")
+        stop("Invalid `kernel`", call. = F)
       }
 
       H_hat    <- beta_hat[2]/(1 - beta_hat[1])
@@ -1151,7 +1154,7 @@ HRR_pt_est <- function(pt_int,cdf_sample,kernel = "gaussian",
       cdf_ext <- c(rev(-cdf_sample),cdf_sample,rev(2-cdf_sample))
       Yhat <- (1:length(cdf_ext))/length(cdf_ext)
       if (kernel == "gaussian"){
-        if(is.null(hazard_bandwidth))stop("Need hazard_bandwidth")
+        if(is.null(hazard_bandwidth))stop("Need `hazard_bandwidth`", call. = F)
         Wp       <- diag(sqrt(stats::dnorm((cdf_ext-pt)/bandwidth)))
         dsg_mtx  <- cbind(rep(1,length(cdf_ext)),
                           (cdf_ext-pt),
@@ -1160,7 +1163,7 @@ HRR_pt_est <- function(pt_int,cdf_sample,kernel = "gaussian",
         X_mtx    <- Wp %*% dsg_mtx
         beta_hat <- qr.solve(X_mtx, Wp%*%Yhat, tol = .Machine$double.eps)
       }else if (kernel == "rectangular"){
-        if(is.null(hazard_bandwidth))stop("Need hazard_bandwidth")
+        if(is.null(hazard_bandwidth))stop("Need `hazard_bandwidth`", call. = F)
         index <- abs(cdf_ext-pt) < bandwidth/2
 
         cdf_sample  <- cdf_ext[index]
@@ -1185,7 +1188,7 @@ HRR_pt_est <- function(pt_int,cdf_sample,kernel = "gaussian",
           beta_hat <- qr.solve(X_mtx, Yhat_sample, tol = .Machine$double.eps)
         }
       }else if (kernel == "triangular"){
-        if(is.null(hazard_bandwidth))stop("Need hazard_bandwidth")
+        if(is.null(hazard_bandwidth))stop("Need `hazard_bandwidth`", call. = F)
         index <- abs(cdf_ext-pt)<bandwidth/2
 
         cdf_sample  <- cdf_ext[index]
@@ -1219,8 +1222,8 @@ HRR_pt_est <- function(pt_int,cdf_sample,kernel = "gaussian",
                                tol = .Machine$double.eps)
         }
       }else if (kernel == "knn"){
-        if(is.null(knn))stop("Need knn")
-        if(knn<=3)stop("Need larger knn")
+        if(is.null(knn))stop("Need `knn`", call. = F)
+        if(knn<=3)stop("Need larger `knn`", call. = F)
         dist <- abs(cdf_ext-pt)
         index <- order(dist)[1:knn]
 
@@ -1230,7 +1233,7 @@ HRR_pt_est <- function(pt_int,cdf_sample,kernel = "gaussian",
         X_mtx  <- cbind(rep(1,knn), (cdf_sample-pt), (cdf_sample-pt)^2)
         beta_hat <- qr.solve(X_mtx, Yhat_sample, tol = .Machine$double.eps)
       }else{
-        stop("Invalid kernel")
+        stop("Invalid `kernel`", call. = F)
       }
 
       H_hat    <- beta_hat[2]/(1 - beta_hat[1])
@@ -1271,13 +1274,13 @@ Haiman_window_lth <- function(N, p, alpha, lower_wl=2, upper_wl=100){
 
   upper_wl <- min(ceiling(N/4),upper_wl)
 
-  if(lower_wl>upper_wl) stop("Can't be approximate in given range.")
+  if(lower_wl>upper_wl) stop("Inappropriate `lower_wl`/`upper_wl`", call. = F)
   if(lower_wl==upper_wl){
     if(check_fun(N = N, critical_cnt = lower_wl-1,
                  window_l = lower_wl, p = p, alpha = alpha)){
       return(lower_wl)
     }else{
-      stop("Can't be approximate in given range.")
+      stop("No result in given range", call. = F)
     }
   }
   while(lower_wl<upper_wl){
@@ -1317,7 +1320,7 @@ q1_function <- function(k,m,p){
              k*stats::dbinom(k+1,m,p)*stats::pbinom(k-1,m,p)+
              m*p*stats::dbinom(k+1,m,p)*stats::pbinom(k-2,m-1,p))
   }else{
-    stop("Input values out of range")
+    stop("Invalid inputs", call. = F)
   }
 }
 
@@ -1350,7 +1353,7 @@ q2_function <- function(k,m,p){
 }
 
 qL_function <- function(L, k, m, p){
-  if(L<=3) stop("Sequence is not long enough")
+  if(L<=3) stop("1-dependent sequence is not long enough", call. = F)
   q1 <- q1_function(k,m,p)
   q2 <- q2_function(k,m,p)
   (2*q1 - q2)/(1 + q1 - q2 + 2*(q1-q2)^2)^L
@@ -1358,7 +1361,8 @@ qL_function <- function(L, k, m, p){
 
 prob_fun <- function(N,k,m,p){
   n <- N/m-1
-  if (n<4) warning("Sequence is not long enough")
+  if (n<4)
+    warning("1-dependent sequence is not long enough for `prob_fun`", call. = F)
   qL_lower <- qL_function(floor(n), k, m, p)
   qL_upper <- qL_function(ceiling(n), k, m, p)
   return(qL_upper*(n-floor(n)) + qL_lower*(1-(n-floor(n))))
@@ -1373,7 +1377,7 @@ sample_mode <- function(x){
 }
 unif <- function(x, unit = 1, rd = T){
   if(unit<=0 | is.infinite(unit)){
-    stop("Unit needs to be positive finite number")
+    stop("`unit` needs to be positive finite number")
   }
   y <- floor(sort(x)/unit)
   bds <- range(y)
@@ -1400,7 +1404,7 @@ unif <- function(x, unit = 1, rd = T){
   return(y*unit+dec)
 }
 rolling_sum <- function(temp, window_l){
-  if (window_l > length(temp)) stop("Too large window length")
+  if (window_l > length(temp)) stop("Too large `window_l`", call. = F)
 
   m <- length(temp)
   cum_sum <- c(0, cumsum(temp))

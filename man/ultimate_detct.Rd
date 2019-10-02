@@ -24,7 +24,8 @@ ultimate_detct(x, theta_th=1, theta_0 = theta_th,
   \item{x}{A numeric vector of data values where is hypothesis test is
   applied on.
 }
-  \item{theta_th}{Initial theoretical theta value of hypothesis test.
+  \item{theta_th}{Initial theoretical theta value of hypothesis test. Needs to
+  be positive.
 }
   \item{theta_0}{Initial real theta value of hypothesis test. Default value is
   same as \code{theta_th}.

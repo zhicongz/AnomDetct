@@ -39,10 +39,10 @@ This vignette will focus on how to detect clusters on data
 `AnomDetct::sim_df_N`, which is a numeric vector.
 
 ```{r load-data}
-x <- sim_df_N
+x <- AnomDetct::sim_df_N
 summary(x)
 df_N <- data.frame(x = x)
-ggplot(data = df_N, aes(x = x)) + geom_histogram(binwidth = 1)
+ggplot2::ggplot(data = df_N, ggplot2::aes(x = x)) + ggplot2::geom_histogram(binwidth = 1)
 ```
 
 ## Data cleaning
@@ -78,7 +78,7 @@ false positive clusters.
 # Idea is like jitter points to avoid overlapping in ggplot2.
 x_backup <- x
 if(sum(duplicated(x))!=0){
-  x <- unif(x = x, unit = 0.01, rd = T)
+  x <- AnomDetct::unif(x = x, unit = 0.01, rd = T)
 }
 N <- length(x)
 ```
@@ -108,17 +108,18 @@ either of the followings:
 ```{r cvt-cdf}
 # If the users know exactly what distribution data is from.
 # For example, assume x is Weibull(0.6, 7)
-cdf_x <- cdf_convert(x, dist_null = "weibull", shape = 0.6, scale = 7)
+cdf_x <- AnomDetct::cdf_convert(x = x, dist_null = "weibull", 
+                                shape = 0.6, scale = 7)
 
 # If the users only know distribution family but don't know parameters.
-dist_info <- fit_dist(x, dist_null = "weibull")
-cdf_x <- cdf_convert(x, dist_null = dist_info$dist, 
-                     dist_info$para[1], dist_info$para[2])
+dist_info <- AnomDetct::fit_dist(x = x, dist_null = "weibull")
+cdf_x     <- AnomDetct::cdf_convert(x = x, dist_null = dist_info$dist, 
+                                    dist_info$para[1], dist_info$para[2])
 
 # If the users know nothing for the underlying distribution.
-dist_info <- fit_dist(x)
-cdf_x <- cdf_convert(x, dist_null = dist_info$dist, 
-                     dist_info$para[1], dist_info$para[2])
+dist_info <- AnomDetct::fit_dist(x = x)
+cdf_x     <- AnomDetct::cdf_convert(x = x, dist_null = dist_info$dist, 
+                                    dist_info$para[1], dist_info$para[2])
 ```
 
 When `dist_null` is missing in `AnomDetct::fit_dist`, this function will 
@@ -133,7 +134,8 @@ from non-common distribution. Even function `fit_dist` suggests use
 
 ```{r cvt-mis-dis}
 df_N <- data.frame(x = cdf_x)
-ggplot(data = df_N, aes(x=cdf_x)) + geom_histogram(binwidth = 0.05)
+ggplot2::ggplot(data = df_N, ggplot2::aes(x=cdf_x)) + 
+  ggplot2::geom_histogram(binwidth = 0.05)
 
 stats::ks.test(x, stats::pweibull, dist_info$para[1], dist_info$para[2])
 ```
@@ -157,18 +159,19 @@ recommended because it involves solving high dimensional linear system.
 
 ```{r est-HRR}
 pt_int <- seq(0,1,0.05)
-density_est <- HRR_sbsp_est(pt_int, cdf_x, 
-                          kernel = "triangular", hazard_bandwidth = 0.2,
-                          n_hz_sample = 50, n_hz_size = 1000)
+density_est <- AnomDetct::HRR_sbsp_est(pt_int = pt_int, cdf = cdf_x, 
+                                       kernel = "triangular", 
+                                       hazard_bandwidth = 0.2,
+                                       n_hz_sample = 50, n_hz_size = 1000)
 density_est
 
-ggplot(data = data.frame(x = 0), aes(x = x)) + 
-  stat_function(fun = density_est$fhat) + xlim(0,1) +
-  ylab("fhat") + xlab("cdf_x")
+ggplot2::ggplot(data = data.frame(x = 0), ggplot2::aes(x = x)) + 
+  ggplot2::stat_function(fun = density_est$fhat) + ggplot2::xlim(0,1) +
+  ggplot2::ylab("fhat") + ggplot2::xlab("cdf_x")
 
-ggplot(data = data.frame(x = 0), aes(x = x)) + 
-  stat_function(fun = density_est$HRR) + xlim(0,1) +
-  ylab("HRR") + xlab("cdf_x")
+ggplot2::ggplot(data = data.frame(x = 0), ggplot2::aes(x = x)) + 
+  ggplot2::stat_function(fun = density_est$HRR) + ggplot2::xlim(0,1) +
+  ggplot2::ylab("HRR") + ggplot2::xlab("cdf_x")
 
 ```
 
@@ -184,8 +187,8 @@ the power of test somehow.
 
 ```{r est-const}
 # No hazard rate ratio adjustment
-fhat_fun <- approxfun(c(0,1), c(1,1))
-HRR_fun  <- approxfun(c(0,1), c(1,1))
+fhat_fun <- stats::approxfun(c(0,1), c(1,1))
+HRR_fun  <- stats::approxfun(c(0,1), c(1,1))
 # density_est <- list(fhat = fhat_fun, HRR  = HRR_fun)
 ```
 
@@ -198,8 +201,8 @@ window length same as this. If not, the package provids function
 
 ```{r wd-len}
 # print(dist_info)
-window_MLE <- MLE_window_lth(x, dist_null = dist_info$dist, 
-                             dist_info$para[1], dist_info$para[2])
+window_MLE <- AnomDetct::MLE_window_lth(x = x, dist_null = dist_info$dist, 
+                                        dist_info$para[1], dist_info$para[2])
 ```
 
 ## Theoretical test statistic distributions and P-values
@@ -212,10 +215,10 @@ Here are 3 patermeters determine the scan statistics distribution:
 
 * Window length
 
-Here, Total number of 
-binary trails is given by data; window length is either given by the users or 
-by `AnomDetct::MLE_window_lth`; the success probability of each trail is given by a 
-function of theta in equation \@ref(eq:succ-prob).
+Here, Total number of binary trails is given by data; 
+window length is either given by the users or by `AnomDetct::MLE_window_lth`; 
+the success probability of each trail is given by a function of theta 
+in equation \@ref(eq:succ-prob).
 
 \begin{equation}
  p = 1-exp(-theta)
@@ -253,21 +256,25 @@ theta_th <- 1
 seq_theta <- seq(0.5, 1, by = 0.05)*theta_th
 
 # minmum window length to use 1-dependent stationary sequences approximation
-window_Haiman <- Haiman_window_lth(N, p = 1-exp(-theta_th), alpha = alpha_lvl, 
-                                   lower_wl = 2, upper_wl = 100)
+window_Haiman <- AnomDetct::Haiman_window_lth(N = N-1, p = 1-exp(-theta_th), 
+                                              alpha = alpha_lvl, 
+                                              lower_wl = 2, upper_wl = 100)
 
 window_lth <- max(window_Haiman, window_MLE)
 
 # the minmum critical sum of success for giving alpha level under theta_th
-min_crit <- crit_theta_fun(N-1, window_lth, 1-exp(-theta_th), alpha_lvl)
+min_crit <- AnomDetct::crit_theta_fun(N = N-1, window_l = window_lth, 
+                                      p = 1-exp(-theta_th), alpha = alpha_lvl)
 
 # the theoretical p-values and q-values for under different theta values
-q_values <- mapply(prob_fun, 1-exp(-seq_theta),
-                   N = N-1, k = min_crit, m = window_lth)
+q_values <- mapply(AnomDetct::prob_fun, 1-exp(-seq_theta), 
+                   MoreArgs = list(N = N-1, 
+                                   k = min_crit, 
+                                   m = window_lth))
 p_values <- mapply(max, 1 - q_values, 0)
 
 # This can also be done by Monte Carlo simulation
-# p_values <- mapply(prob_fun_mc, 1-exp(-seq_theta), 
+# p_values <- mapply(AnomDetct::prob_fun_mc, 1-exp(-seq_theta), 
 #                    MoreArgs = list(N = N-1,
 #                                    k = min_crit,
 #                                    m = window_lth,
@@ -284,7 +291,7 @@ order statistics, there are actually only 'N-1' trails.
 # Detect clusters under different theta level
 HRR <- density_est$HRR(cdf_x)
 
-clst <- mapply(hypo_test, seq_theta,
+clst <- mapply(AnomDetct::hypo_test, seq_theta,
                MoreArgs = list(cdf = cdf_x,
                                HRR = HRR,
                                critical_cnt = min_crit,
@@ -298,8 +305,8 @@ clst_p_values <- mapply(function(x,y)if(nrow(x)>0){cbind(x, p_value = y)}
                         SIMPLIFY = F)
 
 utils::tail(clst_p_values,3)
-clst_plot(x = x, org_x = x, clst_p_values,
-          alpha_lvl, unit = 1, plt_mgn = 0)
+AnomDetct::clst_plot(x = x, org_x = x, clst = clst_p_values,
+                     alpha_lvl = alpha_lvl, unit = 1, plt_mgn = 0)
   
 ```
 
@@ -316,23 +323,27 @@ inappropriate `window_lth`.
 The power of scan statistics is maximized as the scan window length is close to 
 the true cluster size. However, if there are multiple clusters come into 
 one sampled data and the sizes of those clusters are dramatically different, 
-a single window length can not take care of all the clusters one time. 
+a single window length can barely take care of all the clusters one time. 
 Here is another result running on a smaller `window_lth`.
 
 ```{r diag-sw}
 # Slightly turning down the theta_th for smaller valid window length
 theta_th   <- 0.8
 seq_theta  <- seq(0.5, 1, by = 0.05)*theta_th
-window_Haiman <- Haiman_window_lth(N, p = 1-exp(-theta_th), alpha = alpha_lvl, 
-                                   lower_wl = 2, upper_wl = 100)
+window_Haiman <- AnomDetct::Haiman_window_lth(N = N-1, p = 1-exp(-theta_th), 
+                                              alpha = alpha_lvl, 
+                                              lower_wl = 2, upper_wl = 100)
 window_lth <- window_Haiman
 
 # repeat previous steps
-min_crit <- crit_theta_fun(N-1, window_lth, 1-exp(-theta_th), alpha_lvl)
-q_values <- mapply(prob_fun, 1-exp(-seq_theta),
-                   N = N-1, k = min_crit, m = window_lth)
+min_crit <- AnomDetct::crit_theta_fun(N = N-1, window_l = window_lth, 
+                                      p = 1-exp(-theta_th), alpha = alpha_lvl)
+q_values <- mapply(AnomDetct::prob_fun, 1-exp(-seq_theta),
+                   MoreArgs = list(N = N-1, 
+                                   k = min_crit, 
+                                   m = window_lth))
 p_values <- mapply(max, 1 - q_values, 0)
-clst <- mapply(hypo_test, seq_theta,
+clst <- mapply(AnomDetct::hypo_test, seq_theta,
                MoreArgs = list(cdf = cdf_x,
                                HRR = HRR,
                                critical_cnt = min_crit,
@@ -344,23 +355,23 @@ clst_p_values_s <- mapply(function(x,y)if(nrow(x)>0){cbind(x, p_value = y)}
                           SIMPLIFY = F)
 
 utils::tail(clst_p_values_s, 3)
-clst_plot(x = x, org_x = x, clst_p_values_s,
-          alpha_lvl, unit = 1, plt_mgn = 0)
+AnomDetct::clst_plot(x = x, org_x = x, clst = clst_p_values_s, 
+                     alpha_lvl = alpha_lvl, unit = 1, plt_mgn = 0)
 ```
 
 All clusters are detected even though the left most clusters is too thin 
-to be seen. Users can set `plt_mgn` in function `AnomDetct::clst_plot` to imporve 
-the visualization.
+to be seen. Users can set `plt_mgn` in function `AnomDetct::clst_plot` to 
+manually enlarge the margin of clusters shown in plot.
 
 ```{r diag-mgn}
-clst_plot(x = x, org_x = x, clst_p_values_s,
-          alpha_lvl, unit = 1, plt_mgn = 0.5)
+AnomDetct::clst_plot(x = x, org_x = x, clst = clst_p_values_s,
+                     alpha_lvl =alpha_lvl, unit = 1, plt_mgn = 0.5)
 ```
 
 For the data `AnomDetct::sim_df_N`, after manually change the `theta_th` and 
 `window_lth`, this detection model has a better performance compared with 
-model comes with default parameters. The method is decomposed in those pieces 
-to help users using this package smoothly.
+model comes with default parameters. This the reason this method is decomposed 
+in those pieces to help users using this package smoothly.
 
 ## Recusive detection
 
@@ -378,14 +389,51 @@ underlaying distribution and the location of this distribution has no default
 value. To use `AnomDetct::tran_detct`, the suggested package `POT` needs to 
 be installed and `loc` is the location parameter that needs be specified.
 
-```{r}
-foo <- tran_detct(sim_df_N,loc = 10)
-foo$Plot
+```{r rec-POT, eval = F}
+# require package POT
+if(requireNamespace(POT, quietly = T)){
+  foo <- AnomDetct::tran_detct(x = AnomDetct::sim_df_N, loc = 10)
+  foo$Plot
+}
 ```
 
 ## Common Errors and solutions
 
 Here are some common errors that users might meet when using this packages and 
-the suggestions for solving those errors.
+the suggestions for solving those errors. 
+
+### Package `POT`
+
+```{r, error = T, purl = F}
+foo <- AnomDetct::tran_detct(x = AnomDetct::sim_df_N, loc = 10)
+```
+
+`AnomDetct::tran_detct` is the only function in this package that depents on 
+package `POT`. The currently version does not have any alternative option 
+for applying this function. If the user haven't installed `POT`, he/she can 
+still install `AnomDetct` and use all the other functions in this package.
+However, if user want to use `AnomDetct::tran_detct`
+
+### Large scanning window length
+
+```{r, error = T, purl = F}
+foot <- AnomDetct::ultimate_detct(x = AnomDetct::sim_df_N, window_lth = 3000)
+```
+
+Length of 1-dependent sequence is depends on `length(x)/window_lth`. This 
+error mostly occurs with too large `window_lth` especially when `window_lth` 
+is selected by `AnomDetct::MLE_window_lth()`. In this case, users can try 
+manually input `window_lth` or `AnomDetct::Haiman_window_lth()`.
+
+### inappropriate `theta_th`
+
+```{r, error = T, purl = F}
+foo <- AnomDetct::ultimate_detct(x = AnomDetct::sim_df_N, theta_th = 10)
+foo$Plot
+```
+
+Even though the function `AnomDetct::ultimate_detct()` only requests `theta_th` 
+to be positive, too large `theta_th` leads to too much false positive clusters 
+and unsteatable test statistics distribution approximations.
 
 

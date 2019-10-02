@@ -1,0 +1,391 @@
+---
+title: "Using AnomDetct package"
+author: "Zhicong Zhao"
+date: "`r Sys.Date()`"
+package: AnomDetct
+output: 
+  bookdown::html_document2:
+  base_format: rmarkdown::html_vignette
+  toc: true
+  toc_depth: 2
+  number_sections: false
+  fig_caption: true
+vignette: >
+  %\VignetteIndexEntry{Using AnomDetct package}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.align = "center"
+)
+library(ggplot2)
+library(AnomDetct)
+set.seed(20191001)
+```
+
+This vignette is a step-by-step guildbook for helping users using 
+AnomDetct package. Even though the package includes two assemble functions 
+`AnomDetct::ultimate_detct()` and `AnomDetct::tran_detct()` that 
+put all the basic functions in this package together and could be 
+applied on the data directly, it is still necessary for users to know 
+what basic functions are doing there. This can 
+gives users more flexibility for tailoring the hypothesis testing based on 
+the data to enhance the performance for this methodology. 
+This vignette will focus on how to detect clusters on data 
+`AnomDetct::sim_df_N`, which is a numeric vector.
+
+```{r load-data}
+x <- sim_df_N
+summary(x)
+df_N <- data.frame(x = x)
+ggplot(data = df_N, aes(x = x)) + geom_histogram(binwidth = 1)
+```
+
+## Data cleaning
+
+This detection method is done by monitoring the distance between consecutive 
+order statistics. Here is a list of importart properties that the data 
+must be satisfied with:
+
+* No missing data.
+
+```{r clean-missing}
+# Check if the data has any missing value.
+sum(is.na(x)) 
+
+# Remove missing.
+x <- na.omit(x)
+```
+
+* Data is in ascending order.
+
+```{r clean-ordering}
+x <- sort(x)
+```
+
+* Make Sure the data has no duplicated observations. This is the most 
+important property that easily to be ignored. With duplicated values, 
+the differences between order statistics will be 0 which leads to potential 
+false positive clusters.
+
+```{r clean-dup}
+# check if the data has any duplicated value.
+# If duplicate, add small random variance in original obervation. 
+# Idea is like jitter points to avoid overlapping in ggplot2.
+x_backup <- x
+if(sum(duplicated(x))!=0){
+  x <- unif(x = x, unit = 0.01, rd = T)
+}
+N <- length(x)
+```
+
+## Convert data to be uniform distributed
+
+For any continous distributed random variable `x`, the CDF `cdf_x` is uniformly 
+distributed on (0,1).  Instead of directly studying the behaviors of `x`, 
+focusing on `cdf_x` has following benefits:
+
+* It is on a bounded interval.
+
+* The expected order statistics form is terse.
+
+* `cdf_x` is a monotonic function. Wherever clusters detected on `cdf_x`, there 
+must be corresponding clusters occuer on `x`.
+
+Here, `AnomDetct::cdf_convert` is the function converts `x` to `cdf_x`. 
+To use this function, users need to provide distribution family and 
+the correponding parameters. However, in practice, those information 
+might be unattachable. `AnomDetct::fit_dist` is designed to deal with this 
+incomplete information cases. 
+
+based on users knowledge for the underlaying distribution `cdf_x`, he/she can do
+either of the followings:
+
+```{r cvt-cdf}
+# If the users know exactly what distribution data is from.
+# For example, assume x is Weibull(0.6, 7)
+cdf_x <- cdf_convert(x, dist_null = "weibull", shape = 0.6, scale = 7)
+
+# If the users only know distribution family but don't know parameters.
+dist_info <- fit_dist(x, dist_null = "weibull")
+cdf_x <- cdf_convert(x, dist_null = dist_info$dist, 
+                     dist_info$para[1], dist_info$para[2])
+
+# If the users know nothing for the underlying distribution.
+dist_info <- fit_dist(x)
+cdf_x <- cdf_convert(x, dist_null = dist_info$dist, 
+                     dist_info$para[1], dist_info$para[2])
+```
+
+When `dist_null` is missing in `AnomDetct::fit_dist`, this function will 
+search for common continuous distribution families and returns the best 
+fitted underlying distribution via ks-test and MLE. 
+Disbribution misspecification is considered and will be discussed later.
+
+Disbribution misspecification leads to the issue that `cdf_x` is NOT unifrom 
+distributed on (0,1). In fact, the data `AnomDetct::sim_df_N` is generatad 
+from non-common distribution. Even function `fit_dist` suggests use 
+`"weibull"` distribution, it actually does NOT fit with the data really well.
+
+```{r cvt-mis-dis}
+df_N <- data.frame(x = cdf_x)
+ggplot(data = df_N, aes(x=cdf_x)) + geom_histogram(binwidth = 0.05)
+
+stats::ks.test(x, stats::pweibull, dist_info$para[1], dist_info$para[2])
+```
+
+The p-value of ks-test is only 0.02, which means if significant level is 0.05, 
+the null hypothesis needs to be reject.
+
+## Estimate hazard rate ratio function
+
+This cluster detection method is really sensitive to distribution 
+misspecification without this hazard rate ratio adjustment. This function is
+designed to eliminate the false positive/negative clusters comes from the 
+distribution misspecification.
+
+The estimation is from local polynomial regression with reflection to deal 
+with the bias on boundary points. The package supports different combinations 
+of methods/parameters for uses to choice. From the efficency perspective, 
+`AnomDetct::HRR_pt_est` with `"gaussian"` kernel for large data is not 
+recommended because it involves solving high dimensional linear system.
+
+
+```{r est-HRR}
+pt_int <- seq(0,1,0.05)
+density_est <- HRR_sbsp_est(pt_int, cdf_x, 
+                          kernel = "triangular", hazard_bandwidth = 0.2,
+                          n_hz_sample = 50, n_hz_size = 1000)
+density_est
+
+ggplot(data = data.frame(x = 0), aes(x = x)) + 
+  stat_function(fun = density_est$fhat) + xlim(0,1) +
+  ylab("fhat") + xlab("cdf_x")
+
+ggplot(data = data.frame(x = 0), aes(x = x)) + 
+  stat_function(fun = density_est$HRR) + xlim(0,1) +
+  ylab("HRR") + xlab("cdf_x")
+
+```
+
+`AnomDetct::density_est` has two elements,  `fhat` and `HRR`. `fhat` 
+will be used for estimate the anomaly quantity while `HRR` represents 
+hazard rate ratio that will be used in cluster detection. 
+Ideally, without distribution misspecification, `fhat` and `HRR` suppose 
+to be constant functions of 1.
+
+However, if users know precisely what the underlaying distribution is, 
+he/she do not need to add this in detection part and this actually can improve 
+the power of test somehow.
+
+```{r est-const}
+# No hazard rate ratio adjustment
+fhat_fun <- approxfun(c(0,1), c(1,1))
+HRR_fun  <- approxfun(c(0,1), c(1,1))
+# density_est <- list(fhat = fhat_fun, HRR  = HRR_fun)
+```
+
+## Window length
+
+Window length is better to be set closer to cluster size. In the other words, 
+if uses know the rough magnitude of the cluster he/she want to detect, set scan
+window length same as this. If not, the package provids function 
+`AnomDetct::MLE_window_lth` for selecting prior window length. 
+
+```{r wd-len}
+# print(dist_info)
+window_MLE <- MLE_window_lth(x, dist_null = dist_info$dist, 
+                             dist_info$para[1], dist_info$para[2])
+```
+
+## Theoretical test statistic distributions and P-values
+
+Here are 3 patermeters determine the scan statistics distribution:
+
+* Total number of binary trails
+
+* Success probability of each trail
+
+* Window length
+
+Here, Total number of 
+binary trails is given by data; window length is either given by the users or 
+by `AnomDetct::MLE_window_lth`; the success probability of each trail is given by a 
+function of theta in equation \@ref(eq:succ-prob).
+
+\begin{equation}
+ p = 1-exp(-theta)
+ (\#eq:succ-prob)
+\end{equation}
+
+When those three numbers are given, the critical sum of success can determine 
+the p-value of the hypothesis test or vice versa. In this package, 
+the critical sum of success is calculated under the condition that `theta` is 1 
+and p-value is no larger than 0.05. Then, fix critical sum of success,
+as the `theta` shrink down to 0.5, the corresponding p-values are recorded. 
+Those information will be used when making the decision of hypothesis test.
+
+Essentially `theta` represents the intensity of the cluster. Clusters that are
+still able to be detected under smaller `theta` in a hypothesis test means 
+clusters have higher intensity.
+
+Estimating exactly distribution of scan statistics is a NP-hard problem. 
+This package provides two ways to do that: 
+
+* `AnomDetct::prob_fun_mc`: Monte Carlo simulation.
+
+* `AnomDetct::prob_fun`: an approximation by 1-dependent stationary sequences
+
+Monte Carlo simultion takes too long time for the estimation while the 
+1-dependent stationary sequences approximation has restrictions. 
+In general, Monte Carlo simultion is not recommended.
+
+```{r test-dist}
+# set test significant level
+alpha_lvl <- 0.05
+
+# set sequence of theta that users want to put in test. 
+theta_th <- 1
+seq_theta <- seq(0.5, 1, by = 0.05)*theta_th
+
+# minmum window length to use 1-dependent stationary sequences approximation
+window_Haiman <- Haiman_window_lth(N, p = 1-exp(-theta_th), alpha = alpha_lvl, 
+                                   lower_wl = 2, upper_wl = 100)
+
+window_lth <- max(window_Haiman, window_MLE)
+
+# the minmum critical sum of success for giving alpha level under theta_th
+min_crit <- crit_theta_fun(N-1, window_lth, 1-exp(-theta_th), alpha_lvl)
+
+# the theoretical p-values and q-values for under different theta values
+q_values <- mapply(prob_fun, 1-exp(-seq_theta),
+                   N = N-1, k = min_crit, m = window_lth)
+p_values <- mapply(max, 1 - q_values, 0)
+
+# This can also be done by Monte Carlo simulation
+# p_values <- mapply(prob_fun_mc, 1-exp(-seq_theta), 
+#                    MoreArgs = list(N = N-1,
+#                                    k = min_crit,
+#                                    m = window_lth,
+#                                    mc_rep = 1000))
+```
+
+A tricky setting here is the total number of trials. 'N' is the size 
+of the data, since each trail is conducted on every two consecutive 
+order statistics, there are actually only 'N-1' trails. 
+
+## Test statistic and clusters
+
+```{r test-res, fig.cap = "histogram and clusters"}
+# Detect clusters under different theta level
+HRR <- density_est$HRR(cdf_x)
+
+clst <- mapply(hypo_test, seq_theta,
+               MoreArgs = list(cdf = cdf_x,
+                               HRR = HRR,
+                               critical_cnt = min_crit,
+                               window_l = window_lth),
+               SIMPLIFY = F)
+
+# Clusters visualization
+clst_p_values <- mapply(function(x,y)if(nrow(x)>0){cbind(x, p_value = y)}
+                        else{cbind(x,p_value = numeric(0L))},
+                        clst, p_values,
+                        SIMPLIFY = F)
+
+utils::tail(clst_p_values,3)
+clst_plot(x = x, org_x = x, clst_p_values,
+          alpha_lvl, unit = 1, plt_mgn = 0)
+  
+```
+
+The red bars in figure \@ref(fig:test-res) are detected clusters. The deeper
+it goes down, the smaller alpha level the cluster has. 
+
+## Diagnostic
+
+So far, this method successfully catches several clusters on figure 
+\@ref(fig:test-res). However, there are also 2 tiny false negative clusters 
+above 100 that the method is missed. Those missing clusters are from 
+inappropriate `window_lth`.
+
+The power of scan statistics is maximized as the scan window length is close to 
+the true cluster size. However, if there are multiple clusters come into 
+one sampled data and the sizes of those clusters are dramatically different, 
+a single window length can not take care of all the clusters one time. 
+Here is another result running on a smaller `window_lth`.
+
+```{r diag-sw}
+# Slightly turning down the theta_th for smaller valid window length
+theta_th   <- 0.8
+seq_theta  <- seq(0.5, 1, by = 0.05)*theta_th
+window_Haiman <- Haiman_window_lth(N, p = 1-exp(-theta_th), alpha = alpha_lvl, 
+                                   lower_wl = 2, upper_wl = 100)
+window_lth <- window_Haiman
+
+# repeat previous steps
+min_crit <- crit_theta_fun(N-1, window_lth, 1-exp(-theta_th), alpha_lvl)
+q_values <- mapply(prob_fun, 1-exp(-seq_theta),
+                   N = N-1, k = min_crit, m = window_lth)
+p_values <- mapply(max, 1 - q_values, 0)
+clst <- mapply(hypo_test, seq_theta,
+               MoreArgs = list(cdf = cdf_x,
+                               HRR = HRR,
+                               critical_cnt = min_crit,
+                               window_l = window_lth),
+               SIMPLIFY = F)
+clst_p_values_s <- mapply(function(x,y)if(nrow(x)>0){cbind(x, p_value = y)}
+                          else{cbind(x,p_value = numeric(0L))},
+                          clst, p_values,
+                          SIMPLIFY = F)
+
+utils::tail(clst_p_values_s, 3)
+clst_plot(x = x, org_x = x, clst_p_values_s,
+          alpha_lvl, unit = 1, plt_mgn = 0)
+```
+
+All clusters are detected even though the left most clusters is too thin 
+to be seen. Users can set `plt_mgn` in function `AnomDetct::clst_plot` to imporve 
+the visualization.
+
+```{r diag-mgn}
+clst_plot(x = x, org_x = x, clst_p_values_s,
+          alpha_lvl, unit = 1, plt_mgn = 0.5)
+```
+
+For the data `AnomDetct::sim_df_N`, after manually change the `theta_th` and 
+`window_lth`, this detection model has a better performance compared with 
+model comes with default parameters. The method is decomposed in those pieces 
+to help users using this package smoothly.
+
+## Recusive detection
+
+Instead of changing `window_lth`, a more general way to deal with different 
+cluster size issue is multiple windows scanning and then merge results. 
+In this way, the merge clusters' alpha level can be estimate by:
+
+* Monte Carlo simulation
+
+* Bonferroni inequalities
+
+`AnomDetct::tran_detct` is conducted on Bonferroni inequalities. However that 
+function only supports generalized Pareto distribution as 
+underlaying distribution and the location of this distribution has no default 
+value. To use `AnomDetct::tran_detct`, the suggested package `POT` needs to 
+be installed and `loc` is the location parameter that needs be specified.
+
+```{r}
+foo <- tran_detct(sim_df_N,loc = 10)
+foo$Plot
+```
+
+## Common Errors and solutions
+
+Here are some common errors that users might meet when using this packages and 
+the suggestions for solving those errors.
+
+

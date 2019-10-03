@@ -203,6 +203,7 @@ window length same as this. If not, the package provids function
 # print(dist_info)
 window_MLE <- AnomDetct::MLE_window_lth(x = x, dist_null = dist_info$dist, 
                                         dist_info$para[1], dist_info$para[2])
+print(window_MLE)
 ```
 
 ## Theoretical test statistic distributions and P-values
@@ -304,7 +305,7 @@ clst_p_values <- mapply(function(x,y)if(nrow(x)>0){cbind(x, p_value = y)}
                         clst, p_values,
                         SIMPLIFY = F)
 
-utils::tail(clst_p_values,3)
+utils::tail(clst_p_values,2)
 AnomDetct::clst_plot(x = x, org_x = x, clst = clst_p_values,
                      alpha_lvl = alpha_lvl, unit = 1, plt_mgn = 0)
   
@@ -354,7 +355,7 @@ clst_p_values_s <- mapply(function(x,y)if(nrow(x)>0){cbind(x, p_value = y)}
                           clst, p_values,
                           SIMPLIFY = F)
 
-utils::tail(clst_p_values_s, 3)
+utils::tail(clst_p_values_s, 2)
 AnomDetct::clst_plot(x = x, org_x = x, clst = clst_p_values_s, 
                      alpha_lvl = alpha_lvl, unit = 1, plt_mgn = 0)
 ```
@@ -392,7 +393,7 @@ be installed and `loc` is the location parameter that needs be specified.
 ```{r rec-POT, eval = F}
 # require package POT
 if(requireNamespace(POT, quietly = T)){
-  foo <- AnomDetct::tran_detct(x = AnomDetct::sim_df_N, loc = 10)
+  foo <- AnomDetct::tran_detct(x = AnomDetct::sim_df_N, loc = 20)
   foo$Plot
 }
 ```
@@ -405,14 +406,14 @@ the suggestions for solving those errors.
 ### Package `POT`
 
 ```{r, error = T, purl = F}
-foo <- AnomDetct::tran_detct(x = AnomDetct::sim_df_N, loc = 10)
+foo <- AnomDetct::tran_detct(x = AnomDetct::sim_df_N, loc = 20)
 ```
 
-`AnomDetct::tran_detct` is the only function in this package that depents on 
+`AnomDetct::tran_detct()` is the only function in this package that depents on 
 package `POT`. The currently version does not have any alternative option 
 for applying this function. If the user haven't installed `POT`, he/she can 
 still install `AnomDetct` and use all the other functions in this package.
-However, if user want to use `AnomDetct::tran_detct`
+However, if user want to use `AnomDetct::tran_detct()`
 
 ### Large scanning window length
 
@@ -420,20 +421,16 @@ However, if user want to use `AnomDetct::tran_detct`
 foot <- AnomDetct::ultimate_detct(x = AnomDetct::sim_df_N, window_lth = 3000)
 ```
 
-Length of 1-dependent sequence is depends on `length(x)/window_lth`. This 
-error mostly occurs with too large `window_lth` especially when `window_lth` 
-is selected by `AnomDetct::MLE_window_lth()`. In this case, users can try 
-manually input `window_lth` or `AnomDetct::Haiman_window_lth()`.
+Length of 1-dependent sequence is depends on `length(x)/window_lth`. 
 
-### inappropriate `theta_th`
+* The error mostly occurs with too large `window_lth` especially when there is 
+  a large cluster leads to  `AnomDetct::MLE_window_lth()` select large 
+  `window_lth`. In this case, users can try manually input `window_lth` 
+  or `AnomDetct::Haiman_window_lth()`. 
+  
+* The warnings occurs in same case. However, it means length of 1-dependent 
+  sequence is still valid but might bring potiantal bias in p-value estimation. 
+  reduce the `window_lth` is recommended in this case.
 
-```{r, error = T, purl = F}
-foo <- AnomDetct::ultimate_detct(x = AnomDetct::sim_df_N, theta_th = 10)
-foo$Plot
-```
-
-Even though the function `AnomDetct::ultimate_detct()` only requests `theta_th` 
-to be positive, too large `theta_th` leads to too much false positive clusters 
-and unsteatable test statistics distribution approximations.
 
 

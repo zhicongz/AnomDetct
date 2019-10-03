@@ -967,7 +967,7 @@ MLE_window_lth <- function(x,dist_null,..., unit = 1){
 
   if(dist_null == "gpd"){
     if(requireNamespace("POT", quietly = TRUE)){
-      exp_cnt <- diff(POT::pgpd(breaks, ...))
+      exp_cnt <- diff(POT::pgpd(breaks, ...))*length(x)
     }else{
       stop("Need package POT", call. = F)
     }
@@ -1353,16 +1353,21 @@ q2_function <- function(k,m,p){
 }
 
 qL_function <- function(L, k, m, p){
-  if(L<=3) stop("1-dependent sequence is not long enough", call. = F)
-  q1 <- q1_function(k,m,p)
-  q2 <- q2_function(k,m,p)
-  (2*q1 - q2)/(1 + q1 - q2 + 2*(q1-q2)^2)^L
+  if(L==1)
+    q1_function(k,m,p)
+  else if (L==2)
+    q2_function(k,m,p)
+  else{
+    q1 <- q1_function(k,m,p)
+    q2 <- q2_function(k,m,p)
+    (2*q1 - q2)/(1 + q1 - q2 + 2*(q1-q2)^2)^L
+  }
 }
 
 prob_fun <- function(N,k,m,p){
   n <- N/m-1
   if (n<4)
-    warning("1-dependent sequence is not long enough for `prob_fun`", call. = F)
+    stop("1-dependent sequence is not long enough", call. = F)
   qL_lower <- qL_function(floor(n), k, m, p)
   qL_upper <- qL_function(ceiling(n), k, m, p)
   return(qL_upper*(n-floor(n)) + qL_lower*(1-(n-floor(n))))

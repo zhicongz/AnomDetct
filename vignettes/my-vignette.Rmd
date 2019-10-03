@@ -10,6 +10,7 @@ output:
   toc_depth: 2
   number_sections: false
   fig_caption: true
+bibliography: reference.bib
 vignette: >
   %\VignetteIndexEntry{Using AnomDetct package}
   %\VignetteEngine{knitr::rmarkdown}
@@ -243,6 +244,7 @@ This package provides two ways to do that:
 * `AnomDetct::prob_fun_mc`: Monte Carlo simulation.
 
 * `AnomDetct::prob_fun`: an approximation by 1-dependent stationary sequences
+  [see @Haiman-2007].
 
 Monte Carlo simultion takes too long time for the estimation while the 
 1-dependent stationary sequences approximation has restrictions. 
@@ -432,5 +434,5 @@ Length of 1-dependent sequence is depends on `length(x)/window_lth`.
   sequence is still valid but might bring potiantal bias in p-value estimation. 
   reduce the `window_lth` is recommended in this case.
 
-
+# References
 

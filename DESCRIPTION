@@ -19,7 +19,8 @@ Suggests:
     parallel (>= 3.4.4),
     POT (>= 1.1-6),
     knitr (>= 1.25),
-    rmarkdown (>= 1.15)
+    rmarkdown (>= 1.15),
+    testthat (>=2.2.1)
 License: file LICENSE
 Encoding: UTF-8
 LazyData: true

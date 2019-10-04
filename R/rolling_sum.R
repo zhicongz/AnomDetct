@@ -1,4 +1,5 @@
 rolling_sum <- function(temp, window_l){
+  temp <- suppressWarnings(as.numeric(temp))
   temp[is.na(temp)] <- 0
   if (window_l > length(temp)) stop("Too large `window_l`", call. = F)
 

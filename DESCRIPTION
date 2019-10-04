@@ -1,7 +1,7 @@
 Package: AnomDetct
 Type: Package
 Title: Anomaly Detection via Scan Statistics
-Version: 0.0.1
+Version: 0.1.0
 Depends: R(>= 3.6),
 	 stats(>= 3.6.1)
 Authors@R: c(person("Zhicong", "Zhao", role = c("aut", "cre"),

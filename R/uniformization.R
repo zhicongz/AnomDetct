@@ -2,7 +2,7 @@ unif <- function(x, unit = 1, rd = T){
   if(unit<=0 | is.infinite(unit)){
     stop("`unit` needs to be positive finite number")
   }
-  y <- floor(sort(x)/unit)
+  y <- floor(sort(stats::na.omit(x)/unit))
   bds <- range(y)
   breaks <- seq(bds[1],bds[2]+1)*unit
   x_cnt <- table(cut(x, breaks = breaks, right = F))

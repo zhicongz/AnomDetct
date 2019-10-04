@@ -24,16 +24,11 @@ rolling_sum(temp, window_l)
   A numeric vector of length \code{length(temp)-window_l+1} is returned.
   \cr
   Function will be stopped when \code{window_l > length(temp)}.
-  %%  ~Describe the value returned
-  %%  If it is a LIST, use
-  %%  \item{comp1 }{Description of 'comp1'}
-  %%  \item{comp2 }{Description of 'comp2'}
-  %% ...
 }
 
-\author{Xiaojing Ni
-  %%  ~~who you are~~
-}
+\author{Xiaojing Ni}
+
+\note{An NA value in x will be treat as 0 in rolling_sum(x).}
 
 \examples{
 rolling_sum(1:10, 2)

@@ -12,7 +12,7 @@ minimum window length also consider the restrictions of input parameters.
 %%  ~~ A concise (1-5 lines) description of what the function does. ~~
 }
 \usage{
-Haiman_window_lth(N, p, alpha, lower_wl=2, upper_wl=100)
+Haiman_window_lth(N, p, alpha, lower_wl=3, upper_wl=100)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{

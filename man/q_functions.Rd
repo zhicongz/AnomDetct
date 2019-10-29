@@ -37,7 +37,7 @@ sequences.
 \cr
 \code{L} and \code{N} represent two different measurement even though those are
 all related to the length of scanned sequence.
-\deqn{L = N/m-1}
+\deqn{L = N/m}
 while \code{N} is the length of sequence.
 \cr
 \cr

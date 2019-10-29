@@ -1,4 +1,4 @@
-Haiman_window_lth <- function(N, p, alpha, lower_wl=2, upper_wl=100){
+Haiman_window_lth <- function(N, p, alpha, lower_wl=3, upper_wl=100){
   check_fun <- function(N, critical_cnt, window_l, p, alpha){
     p1 <- 1 - AnomDetct::q1_function(critical_cnt, window_l, p)
 

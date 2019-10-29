@@ -1,5 +1,5 @@
 q1_function <- function(k,m,p){
-  if(k>=0 & m>=k & p>=0 & p<=1){
+  if(k>=2 & m>=k & p>=0 & p<=1){
     return(stats::pbinom(k,m,p)^2 -
              k*stats::dbinom(k+1,m,p)*stats::pbinom(k-1,m,p)+
              m*p*stats::dbinom(k+1,m,p)*stats::pbinom(k-2,m-1,p))
@@ -44,12 +44,12 @@ qL_function <- function(L, k, m, p){
   else{
     q1 <- AnomDetct::q1_function(k,m,p)
     q2 <- AnomDetct::q2_function(k,m,p)
-    (2*q1 - q2)/(1 + q1 - q2 + 2*(q1-q2)^2)^L
+    (2*q1 - q2)/(1 + q1 - q2 + 2*(q1-q2)^2)^(L-1)
   }
 }
 
 prob_fun <- function(N,k,m,p){
-  n <- N/m-1
+  n <- N/m
   if (n<4)
     stop("1-dependent sequence is not long enough", call. = F)
   qL_lower <- AnomDetct::qL_function(floor(n), k, m, p)

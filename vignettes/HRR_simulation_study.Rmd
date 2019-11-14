@@ -595,7 +595,9 @@ When blue line and green line are not overlapped,
 as the point $(x,y)$ goes up by one unit,say $\Delta y$, 
 the true increament on x-axis is $\frac{1}{f(x)}\Delta y$
 while the expected increament on x-axis is $\frac{1-x}{1-F(x)}\Delta y$.
-$ \frac{1}{f(x)}\Delta y = \frac{H_u(x)}{H_v(x)}\frac{1-x}{1-F(x)}\Delta y$
+
+$\frac{1}{f(x)}\Delta y = \frac{H_u(x)}{H_v(x)}\frac{1-x}{1-F(x)}\Delta y$
+
 So when $H_v(x) != H_u(x)$, 
 we need to adjust the expected increament (distance) by $\frac{H_u(x)}{H_v(x)}$
 

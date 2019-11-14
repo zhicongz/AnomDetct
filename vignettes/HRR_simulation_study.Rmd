@@ -1,0 +1,601 @@
+---
+title: "HRR_simulation_study"
+author: "Zhicong Zhao"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{HRR_simulation_study}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "HRR_simulation_files/figures/HRR-",
+  out.width = "100%",
+  fig.align = "center"
+)
+```
+
+```{r loaddata, echo=F}
+case1_res <- readRDS("HRR_simulation_files/RDS/case1_res.rds")
+case2_res <- readRDS("HRR_simulation_files/RDS/case2_res.rds")
+case3_res <- readRDS("HRR_simulation_files/RDS/case3_res.rds")
+case4_res <- readRDS("HRR_simulation_files/RDS/case2_rev_res.rds")
+```
+# Simulation studies for hazard rate adjuestment
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+This simulation study contains 3 cases:
+1. scan on uniform distribution random varialbes with an embedded cluster.
+2. scan on first order fourier series random varialbes with an embedded cluster, no hazard rate adjuestment.
+3. scan on first order fourier series random varialbes with an embedded cluster, hazard rate adjuestment.
+
+## Pre settings
+```{r packages}
+#---------------------------------- packages ----------------------------------#
+library(POT)
+library(AnomDetct)
+library(ggplot2)
+library(parallel)
+```
+
+```{r functions}
+#----------------------------- predefine functions ----------------------------#
+# This check if the estimate probability is valid
+check_fun <- function(N, critical_cnt, window_l, p){
+  p1 <- 1 - AnomDetct::q1_function(critical_cnt, window_l, p)
+  
+  n <- floor(N/window_l-1)
+  return(p1 <= 0.025 &
+           n>3 &
+           3.3*n*p1^2 < 1)
+}
+
+# This check if the detected cluster is ture cluster
+check_clst <- function(clst_row, x_clst, x_all){
+  clst_intv  <- range(x_clst)
+  detct_intv <- c(x_all[clst_row[1]],x_all[clst_row[2]])
+  return(max(detct_intv[1],clst_intv[1]) < min(detct_intv[2],clst_intv[2]))
+}
+```
+
+```{r parameters}
+#----------------------------- parameters setting -----------------------------#
+## sample size ##
+n <- 10000L
+
+## cluster size ##
+n_clst <- 150L
+
+## cos function ##
+f_x <- function(x) a*sin(2*pi*x) + 1
+F_x <- function(x) x + a/(2*pi)*(1-cos(2*pi*x))
+
+## cos parameter ##
+a <- -0.7
+
+## generalized pareto distribution parameter ##
+mu <- 0
+xi <- 2
+sig <- 10
+
+## cluster dist ##
+clst_loc <- 0.5
+clst_bin <- 0.005
+
+## theta ##
+theta_th <- 0.1
+
+## p-value ##
+alpha_0 <- 0.05
+
+## simulation repeating time ##
+sim_rep <- 5000L
+
+```
+
+As the size are same cross different cases, critical values only need to be computed once.
+```{r p-values}
+#------------------------------ critical values -------------------------------#
+min_crit <- AnomDetct::crit_theta_fun(N = n, window_l = n_clst, 
+                                      p = 1-exp(-theta_th), alpha = alpha_0)
+
+## check if prob_fun used in crit_theta_fun is reliable ##
+if(!check_fun(N = n, critical_cnt = min_crit, 
+              window_l = n_clst, p = 1-exp(-theta_th))) stop("Invalid input")
+
+
+## alpha_th may not be same as alpha_0 as min_crit is discrete ##
+alpha_th <- AnomDetct::prob_fun(N = n, k = min_crit, 
+                                m = n_clst, p = 1-exp(-theta_th))
+```
+
+## Case1 
+`case1_fnc` generates data in uniform distribution and mix it with cluster data.
+The function returns a matrix of 3 columns: start,end,if detected cluster intersects true cluster
+```{r case1_fnc}
+case1_fnc <- function(i){
+  ## generate data ##
+  x_base <- runif(n-n_clst)
+  x_clst <- runif(n_clst, clst_loc-clst_bin, clst_loc+clst_bin)
+  
+  ## cdf x ##
+  cdf_x <- sort(c(x_base,x_clst))
+  
+  ## No hazard rate ratio adjustment ##
+  HRR_fun  <- stats::approxfun(c(0,1), c(1,1))
+  HRR      <- HRR_fun(cdf_x)
+  
+  ## detect cluster ##
+  clst <- AnomDetct::hypo_test(cdf = cdf_x, HRR = HRR, critical_cnt = min_crit,
+                               window_l = n_clst, theta = theta_th)
+  
+  if(nrow(clst)==0) return(matrix(nrow = 0, ncol = 3,
+                                  dimnames = list(NULL,
+                                                  c("start","end","clst_is_ture"))))
+  clst_is_ture <- mapply(check_clst, 
+                         split(clst,seq.int(nrow(clst))),
+                         MoreArgs = list(x_clst = x_clst,
+                                         x_all  = cdf_x))
+  ## change clst from index to real range ##
+  clst <- t(apply(clst,1,function(i)cdf_x[i]))
+
+  colnames(clst) <- c("start","end")
+  return(cbind(clst,clst_is_ture))
+}
+```
+
+```{r case1_body, eval = F}
+## seed ##
+RNGkind("L'Ecuyer-CMRG")
+set.seed(201911121)
+
+## scan results ##
+case1_res <- mclapply(seq.int(sim_rep), case1_fnc)
+```
+
+```{r case1_result}
+## true positive and false positive ##
+case1_mtx <- do.call(rbind, case1_res)
+
+TP <- sum(case1_mtx[,3])/length(case1_mtx[,3])
+FP <- 1-TP
+#------------------------------------ plot ------------------------------------#
+## cumulative detected clusters ##
+cnt_fnc <- function(x) sum(case1_mtx[,1] <= x & case1_mtx[,2] >= x)
+
+p_clst <- ggplot(data.frame(x = seq(0,1,by = 0.001)),mapping = aes(x)) + 
+  stat_function(fun = function(x)sapply(x,cnt_fnc)) +
+  ylim(c(0,sim_rep)) +
+  ggtitle("Detected Clusters") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+## plot density function ##
+den_fnc <- function(x){
+  base_den <- (1-n_clst/n)
+  clst_den <- n_clst/n*(clst_loc-clst_bin<=x && x <=clst_loc+clst_bin)/
+    (2*clst_bin)
+  return(base_den + clst_den)
+}
+
+p_den <- ggplot(data.frame(x = seq(0,1,by = 0.001)),mapping = aes(x)) + 
+  stat_function(fun = function(x)sapply(x,den_fnc), geom = "step") +
+  ggtitle("Density Function") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+## plot histogram ##
+x_base <- POT::rgpd(n-n_clst, loc = mu, scale = sig, shape = xi)
+x_clst <- qgpd(runif(n_clst, clst_loc-clst_bin, clst_loc+clst_bin),
+               loc = mu, scale = sig, shape = xi)
+x_all <- sort(c(x_clst,x_base))
+
+p_hist <- ggplot(data.frame(x = x_all[x_all<100]), mapping = aes(x)) + 
+  geom_histogram(binwidth = 2) + 
+  ggtitle("Example of gp+cluster") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+p_clst
+p_den
+p_hist
+```
+
+## Case2
+`case2_fnc` generates data with fourier first order density function and mix it with cluster data.
+The function returns a matrix of 3 columns: start,end,if detected cluster intersects true cluster
+```{r case2_fnc}
+case2_fnc <- function(i){
+  ## generate data ##
+  init <- runif(n-n_clst)
+  op <- function(inp){
+    FCN <- function(x) abs(F_x(x) - inp)
+    return(optim(par = 0.5, lower = 0, upper = 1,
+                 fn = FCN, method = "L-BFGS-B")$par)
+  }
+  y <- unlist(mclapply(init, op))
+  ## if y is 0 or 1, replace y with init because sin 0 and 2pi is 1
+  x_base <- ifelse(y == 0 | y == 1, init, y)
+  x_clst <- runif(n_clst, clst_loc-clst_bin, clst_loc+clst_bin)
+  
+  ## cdf x ##
+  cdf_x <- sort(c(x_base,x_clst))
+  
+  ## No hazard rate ratio adjustment ##
+  HRR_fun  <- stats::approxfun(c(0,1), c(1,1))
+  HRR      <- HRR_fun(cdf_x)
+  
+  ## detect cluster ##
+  clst <- AnomDetct::hypo_test(cdf = cdf_x, HRR = HRR, critical_cnt = min_crit,
+                               window_l = n_clst, theta = theta_th)
+  
+  if(nrow(clst)==0) return(matrix(nrow = 0, ncol = 3,
+                                  dimnames = list(NULL,
+                                                  c("start","end","clst_is_ture"))))
+  clst_is_ture <- mapply(check_clst, 
+                         split(clst,seq.int(nrow(clst))),
+                         MoreArgs = list(x_clst = x_clst,
+                                         x_all  = cdf_x))
+  ## change clst from index to real range ##
+  clst <- t(apply(clst,1,function(i)cdf_x[i]))
+  
+  colnames(clst) <- c("start","end")
+  return(cbind(clst,clst_is_ture))
+}
+```
+
+```{r case2_body, eval = F}
+## seed ##
+RNGkind("L'Ecuyer-CMRG")
+set.seed(201911122)
+
+## scan results ##
+case2_res <- mclapply(seq.int(sim_rep), case2_fnc)
+```
+
+```{r case2_result}
+## true positive and false positive ##
+case2_mtx <- do.call(rbind, case2_res)
+
+TP <- sum(case2_mtx[,3])/length(case2_mtx[,3])
+FP <- 1-TP
+#------------------------------------ plot ------------------------------------#
+## cumulative detected clusters ##
+cnt_fnc <- function(x) sum(case2_mtx[,1] <= x & case2_mtx[,2] >= x)
+
+p_clst <- ggplot(data.frame(x = seq(0,1,by = 0.001)),mapping = aes(x)) + 
+  stat_function(fun = function(x)sapply(x,cnt_fnc)) +
+  ylim(c(0,sim_rep)) +
+  ggtitle("Detected Clusters") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+## plot density function ##
+den_fnc <- function(x){
+  base_den <- (1-n_clst/n)
+  clst_den <- n_clst/n*(clst_loc-clst_bin<=x && x <=clst_loc+clst_bin)/
+    (2*clst_bin)
+  return(base_den + clst_den)
+}
+
+p_den <- ggplot(data.frame(x = seq(0,1,by = 0.001)),mapping = aes(x)) + 
+  stat_function(fun = function(x)sapply(x,den_fnc), geom = "step") +
+  ggtitle("Density Function") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+## plot histogram ##
+init <- runif(n-n_clst)
+op <- function(inp){
+  FCN <- function(x) abs(F_x(x) - inp)
+  return(optim(par = 0.5, lower = 0, upper = 1,
+               fn = FCN, method = "L-BFGS-B")$par)
+}
+y <- unlist(mclapply(init, op))
+## if y is 0 or 1, replace y with init because sin 0 and 2pi is 1
+x_base <- ifelse(y == 0 | y == 1, init, y)
+x_clst <- runif(n_clst, clst_loc-clst_bin, clst_loc+clst_bin)
+
+## cdf x ##
+cdf_x <- sort(c(x_base,x_clst))
+
+## x_all ##
+x_all <- POT::qgpd(cdf_x, loc = mu, scale = sig, shape = xi)
+p_hist <- ggplot(data.frame(x = x_all[x_all<100]), mapping = aes(x)) + 
+  geom_histogram(binwidth = 2) + 
+  ggtitle("Example of gp+cluster") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+p_clst
+p_den
+p_hist
+```
+
+## Case3
+`case3_fnc` generates data with fourier first order density function and mix it with cluster data.
+The function returns a matrix of 3 columns: start,end,if detected cluster intersects true cluster
+```{r case3_fnc}
+case3_fnc <- function(i){
+  ## generate data ##
+  init <- runif(n-n_clst)
+  op <- function(inp){
+    FCN <- function(x) abs(F_x(x) - inp)
+    return(optim(par = 0.5, lower = 0, upper = 1,
+                 fn = FCN, method = "L-BFGS-B")$par)
+  } 
+  y <- unlist(mclapply(init, op))
+  ## if y is 0 or 1, replace y with init because sin 0 and 2pi is 1
+  x_base <- ifelse(y == 0 | y == 1, init, y)
+  x_clst <- runif(n_clst, clst_loc-clst_bin, clst_loc+clst_bin)
+  
+  ## cdf x ##
+  cdf_x <- sort(c(x_base,x_clst))
+  
+  ## No hazard rate ratio adjustment ##
+  HRR_fun <- function(x) 1/(1-x)/(f_x(x)/(1-F_x(x)))
+  HRR <- HRR_fun(cdf_x)
+  
+  ## detect cluster ##
+  clst <- AnomDetct::hypo_test(cdf = cdf_x, HRR = HRR, critical_cnt = min_crit,
+                               window_l = n_clst, theta = theta_th)
+  
+  if(nrow(clst)==0) return(matrix(nrow = 0, ncol = 3,
+                                  dimnames = list(NULL,
+                                                  c("start","end","clst_is_ture"))))
+  clst_is_ture <- mapply(check_clst, 
+                         split(clst,seq.int(nrow(clst))),
+                         MoreArgs = list(x_clst = x_clst,
+                                         x_all  = cdf_x))
+  ## change clst from index to real range ##
+  clst <- t(apply(clst,1,function(i)cdf_x[i]))
+  
+  colnames(clst) <- c("start","end")
+  return(cbind(clst,clst_is_ture))
+}
+```
+
+```{r case3_body, eval = F}
+## seed ##
+RNGkind("L'Ecuyer-CMRG")
+set.seed(201911123)
+
+## scan results ##
+case3_res <- mclapply(seq.int(sim_rep), case3_fnc)
+```
+
+```{r case3_result}
+## true positive and false positive ##
+case3_mtx <- do.call(rbind, case3_res)
+
+TP <- sum(case3_mtx[,3])/length(case3_mtx[,3])
+FP <- 1-TP
+#------------------------------------ plot ------------------------------------#
+## cumulative detected clusters ##
+cnt_fnc <- function(x) sum(case3_mtx[,1] <= x & case3_mtx[,2] >= x)
+
+p_clst <- ggplot(data.frame(x = seq(0,1,by = 0.001)),mapping = aes(x)) + 
+  stat_function(fun = function(x)sapply(x,cnt_fnc)) +
+  ylim(c(0,sim_rep))
+
+## plot density function ##
+den_fnc <- function(x){
+  base_den <- (1-n_clst/n)
+  clst_den <- n_clst/n*(clst_loc-clst_bin<=x && x <=clst_loc+clst_bin)/
+    (2*clst_bin)
+  return(base_den + clst_den)
+}
+
+p_den <- ggplot(data.frame(x = seq(0,1,by = 0.001)),mapping = aes(x)) + 
+  stat_function(fun = function(x)sapply(x,den_fnc), geom = "step") +
+  ggtitle("Density Function") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+## plot histogram ##
+init <- runif(n-n_clst)
+op <- function(inp){
+  FCN <- function(x) abs(F_x(x) - inp)
+  return(optim(par = 0.5, lower = 0, upper = 1,
+               fn = FCN, method = "L-BFGS-B")$par)
+}
+y <- unlist(mclapply(init, op))
+## if y is 0 or 1, replace y with init because sin 0 and 2pi is 1
+x_base <- ifelse(y == 0 | y == 1, init, y)
+x_clst <- runif(n_clst, clst_loc-clst_bin, clst_loc+clst_bin)
+
+## cdf x ##
+cdf_x <- sort(c(x_base,x_clst))
+
+## x_all ##
+x_all <- POT::qgpd(cdf_x, loc = mu, scale = sig, shape = xi)
+p_hist <- ggplot(data.frame(x = x_all[x_all<100]), mapping = aes(x)) + 
+  geom_histogram(binwidth = 2) + 
+  ggtitle("Example of gp+cluster") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+p_clst
+p_den
+p_hist
+```
+
+## Notes
+
+### Insert cluster on GP or uniform
+If insert same cluster on GP density function for case1 and case2, 
+the clusters occur on the place where surrending density are different for correpsonding
+uniform density function.
+If insert same clsuter on uniform density function, 
+the clusters occur on the place where surrending density are different for correpsonding 
+gp density function.
+Considering the method scans on uniform density function, the clusters are inserted 
+on uniform density function.
+
+Take a simple example for inserting on a fixed place `clst_loc`, on uniform.
+
+Case1:
+```{r insert_GP_case1}
+## generate data ##
+x_base <- runif(n-n_clst)
+x_clst <- rep(clst_loc,n_clst)
+
+## cdf x ##
+cdf_x <- sort(c(x_base,x_clst))
+
+ggplot(data.frame(x = cdf_x), mapping = aes(x)) + 
+  geom_histogram(binwidth = 0.01)
+
+## plot histogram ##
+y_base <- POT::qgpd(x_base, loc = mu, scale = sig, shape = xi)
+y_clst <- qgpd(x_clst, loc = mu, scale = sig, shape = xi)
+y_all <- sort(c(y_clst,y_base))
+
+ggplot(data.frame(x = y_all[y_all<100]), mapping = aes(x)) + 
+  geom_histogram(binwidth = 2)
+```
+
+Case2:
+```{r insert_GP_case2}
+## generate data ##
+init <- runif(n-n_clst)
+op <- function(inp){
+  FCN <- function(x) abs(F_x(x) - inp)
+  return(optim(par = 0.5, lower = 0, upper = 1,
+               fn = FCN, method = "L-BFGS-B")$par)
+}
+y <- unlist(mclapply(init, op))
+## if y is 0 or 1, replace y with init because sin 0 and 2pi is 1
+x_base <- ifelse(y == 0 | y == 1, init, y)
+x_clst <- rep(clst_loc,n_clst)
+
+## cdf x ##
+cdf_x <- sort(c(x_base,x_clst))
+
+ggplot(data.frame(x = cdf_x), mapping = aes(x)) + 
+  geom_histogram(binwidth = 0.01)
+
+## plot histogram ##
+y_base <- POT::qgpd(x_base, loc = mu, scale = sig, shape = xi)
+y_clst <- qgpd(x_clst, loc = mu, scale = sig, shape = xi)
+y_all <- sort(c(y_clst,y_base))
+
+ggplot(data.frame(x = y_all[y_all<100]), mapping = aes(x)) + 
+  geom_histogram(binwidth = 2)
+```
+
+### scan direction affects results
+case2 revise:
+```{r rev_case2_para}
+## cos parameter ##
+a <- 0.7
+```
+
+```{r rev_case2_body, eval=F}
+## seed ##
+RNGkind("L'Ecuyer-CMRG")
+set.seed(201911122)
+
+## scan results ##
+case4_res <- mclapply(seq.int(sim_rep), case2_fnc)
+```
+
+```{r rev_case2_result}
+## true positive and false positive ##
+case4_mtx <- do.call(rbind, case4_res)
+
+TP <- sum(case4_mtx[,3])/length(case4_mtx[,3])
+FP <- 1-TP
+#------------------------------------ plot ------------------------------------#
+## cumulative detected clusters ##
+cnt_fnc <- function(x) sum(case4_mtx[,1] <= x & case4_mtx[,2] >= x)
+
+p_clst <- ggplot(data.frame(x = seq(0,1,by = 0.001)),mapping = aes(x)) + 
+  stat_function(fun = function(x)sapply(x,cnt_fnc)) +
+  ylim(c(0,sim_rep)) +
+  ggtitle("Detected Clusters") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+## plot density function ##
+den_fnc <- function(x){
+  base_den <- (1-n_clst/n)
+  clst_den <- n_clst/n*(clst_loc-clst_bin<=x && x <=clst_loc+clst_bin)/
+    (2*clst_bin)
+  return(base_den + clst_den)
+}
+
+p_den <- ggplot(data.frame(x = seq(0,1,by = 0.001)),mapping = aes(x)) + 
+  stat_function(fun = function(x)sapply(x,den_fnc), geom = "step") +
+  ggtitle("Density Function") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+## plot histogram ##
+init <- runif(n-n_clst)
+op <- function(inp){
+  FCN <- function(x) abs(F_x(x) - inp)
+  return(optim(par = 0.5, lower = 0, upper = 1,
+               fn = FCN, method = "L-BFGS-B")$par)
+}
+y <- unlist(mclapply(init, op))
+## if y is 0 or 1, replace y with init because sin 0 and 2pi is 1
+x_base <- ifelse(y == 0 | y == 1, init, y)
+x_clst <- runif(n_clst, clst_loc-clst_bin, clst_loc+clst_bin)
+
+## cdf x ##
+cdf_x <- sort(c(x_base,x_clst))
+
+## x_all ##
+x_all <- POT::qgpd(cdf_x, loc = mu, scale = sig, shape = xi, lower.tail = F)
+p_hist <- ggplot(data.frame(x = x_all[x_all<100]), mapping = aes(x)) + 
+  geom_histogram(binwidth = 2) + 
+  ggtitle("Example of gp+cluster") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+p_clst
+p_den
+p_hist
+```
+
+### Geometric explanation
+```{r geo}
+df1 <- data.frame(x = seq(0,1,by = 0.001),
+                  y = F_x(seq(0,1,by = 0.001)),
+                  type = "CDF")
+
+df2 <- data.frame(x = c(0.25,1),
+                  y = c(F_x(0.25),1),
+                  type = "expt slope")
+
+linear <- function(x) F_x(0.25)-f_x(0.25)*0.25 + f_x(0.25)*x
+df3 <- data.frame(x = seq(0,0.5,by = 0.001),
+                  y = linear(seq(0,0.5,by = 0.001)),
+                  type = "true slope")
+
+df <- rbind(df1,df2,df3)
+
+pt <- data.frame(x = c(0.25,1),
+                 y = c(F_x(0.25),1))
+pt$coords <- c("(x, y)", "(1, 1)")
+
+ggplot(df) + 
+  geom_path(aes(x = x, y = y, color = type, linetype = type)) +
+  geom_point(data = pt, aes(x = x, y = y),size = 3, shape=1) + 
+  geom_label(data = pt, aes(x = x, y = y+0.1, label=coords)) + 
+  ggtitle("CDF") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+When blue line and green line are overlapped, that means the the expected slope 
+is same as true slop, which means
+$f(x) = \frac{1-F(x)}{1-x}$,
+where `f(x)` is the pdf of `x` and `F(x)` is the cdf of `x`.
+This can be rewritten as 
+$H_v(x) = \frac{f(x)}{1-F(x)} = \frac{1}{1-x} = H_u(x)$
+So only when $H_v(x) = H_u(x)$, the probability is correct without Hazard rate adjustment.
+
+When blue line and green line are not overlapped,
+as the point $(x,y)$ goes up by one unit,say $\Delta y$, 
+the true increament on x-axis is $\frac{1}{f(x)}\Delta y$
+while the expected increament on x-axis is $\frac{1-x}{1-F(x)}\Delta y$.
+$ \frac{1}{f(x)}\Delta y = \frac{H_u(x)}{H_v(x)}\frac{1-x}{1-F(x)}\Delta y$
+So when $H_v(x) != H_u(x)$, 
+we need to adjust the expected increament (distance) by $\frac{H_u(x)}{H_v(x)}$
+

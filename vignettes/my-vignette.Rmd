@@ -28,13 +28,13 @@ library(AnomDetct)
 set.seed(20191001)
 ```
 
-This vignette is a step-by-step guildbook for helping users using 
+This vignette is a step-by-step guidebook for helping users using 
 AnomDetct package. Even though the package includes two assemble functions 
 `AnomDetct::ultimate_detct()` and `AnomDetct::tran_detct()` that 
 put all the basic functions in this package together and could be 
 applied on the data directly, it is still necessary for users to know 
 what basic functions are doing there. This can 
-gives users more flexibility for tailoring the hypothesis testing based on 
+give users more flexibility for tailoring the hypothesis testing based on 
 the data to enhance the performance for this methodology. 
 This vignette will focus on how to detect clusters on data 
 `AnomDetct::sim_df_N`, which is a numeric vector.
@@ -261,7 +261,7 @@ seq_theta <- seq(0.5, 1, by = 0.05)*theta_th
 # minmum window length to use 1-dependent stationary sequences approximation
 window_Haiman <- AnomDetct::Haiman_window_lth(N = N-1, p = 1-exp(-theta_th), 
                                               alpha = alpha_lvl, 
-                                              lower_wl = 2, upper_wl = 100)
+                                              lower_wl = 3, upper_wl = 100)
 
 window_lth <- max(window_Haiman, window_MLE)
 
@@ -335,7 +335,7 @@ theta_th   <- 0.8
 seq_theta  <- seq(0.5, 1, by = 0.05)*theta_th
 window_Haiman <- AnomDetct::Haiman_window_lth(N = N-1, p = 1-exp(-theta_th), 
                                               alpha = alpha_lvl, 
-                                              lower_wl = 2, upper_wl = 100)
+                                              lower_wl = 3, upper_wl = 100)
 window_lth <- window_Haiman
 
 # repeat previous steps
@@ -373,7 +373,7 @@ AnomDetct::clst_plot(x = x, org_x = x, clst = clst_p_values_s,
 
 For the data `AnomDetct::sim_df_N`, after manually change the `theta_th` and 
 `window_lth`, this detection model has a better performance compared with 
-model comes with default parameters. This the reason this method is decomposed 
+model comes with default parameters. That's why this method is decomposed 
 in those pieces to help users using this package smoothly.
 
 ## Recusive detection
@@ -415,7 +415,7 @@ foo <- AnomDetct::tran_detct(x = AnomDetct::sim_df_N, loc = 20)
 package `POT`. The currently version does not have any alternative option 
 for applying this function. If the user haven't installed `POT`, he/she can 
 still install `AnomDetct` and use all the other functions in this package.
-However, if user want to use `AnomDetct::tran_detct()`
+However, if user want to use `AnomDetct::tran_detct()`, package `POT` is necessary.
 
 ### Large scanning window length
 

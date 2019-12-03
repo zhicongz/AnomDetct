@@ -44,7 +44,7 @@ tran_detct <- function(x, theta_th=1, theta_0 = theta_th, alpha_lvl=0.05,
     }
     window_Haiman <- AnomDetct::Haiman_window_lth(N-1, p = 1-exp(-theta_th),
                                                   alpha_lvl,
-                                                  lower_wl=2, upper_wl=100)
+                                                  lower_wl=3, upper_wl=100)
 
     window_MLE <- AnomDetct::MLE_window_lth(x,dist_null = "gpd",loc = loc,
                                             scale = para_hat[1],
@@ -55,7 +55,7 @@ tran_detct <- function(x, theta_th=1, theta_0 = theta_th, alpha_lvl=0.05,
     if(cur_rec == 0){
       min_crit <- AnomDetct::crit_theta_fun(N-1, window_lth,
                                             1-exp(-theta_th), alpha_lvl)
-      q_values <- mapply(AnomDetct::prob_fun, 1-exp(-seq_theta/theta_0),
+      q_values <- mapply(AnomDetct::prob_fun, 1-exp(-seq_theta),
                          N = N-1, k = min_crit,m = window_lth)
       p_values <- mapply(max, 1 - q_values, 0)
 
@@ -92,7 +92,7 @@ tran_detct <- function(x, theta_th=1, theta_0 = theta_th, alpha_lvl=0.05,
     }else{
       min_crit <- AnomDetct::crit_theta_fun(N-1, window_lth,
                                             1-exp(-theta_th), alpha_lvl)
-      q_values_temp <- mapply(AnomDetct::prob_fun, 1-exp(-seq_theta/theta_0),
+      q_values_temp <- mapply(AnomDetct::prob_fun, 1-exp(-seq_theta),
                               N = N-1, k = min_crit,m = window_lth)
 
       p_values <- mapply(min,

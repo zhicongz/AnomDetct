@@ -51,7 +51,7 @@ ultimate_detct <- function(x, theta_th=1, theta_0 = theta_th,
 
   min_crit <- AnomDetct::crit_theta_fun(N-1, window_lth,
                                         1-exp(-theta_th), alpha_lvl)
-  q_values <- mapply(AnomDetct::prob_fun, 1-exp(-seq_theta/theta_0),
+  q_values <- mapply(AnomDetct::prob_fun, 1-exp(-seq_theta),
                      N = N-1, k = min_crit,m = window_lth)
 
   if(est_fun == "pt"){

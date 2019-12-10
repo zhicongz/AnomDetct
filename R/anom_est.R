@@ -33,7 +33,7 @@ anom_est <- function(clst_p_values, alpha_lvl,
     return(total_amt - exp_amt)
   })
 
-  if(any(sign(amt))==-1)
+  if(any(sign(amt)==-1))
     warning("Detected cluster(s) come from negative domain.")
 
   return(sum(amt))

@@ -80,10 +80,9 @@ tran_detct <- function(x, theta_th=1, theta_0 = theta_th, alpha_lvl=0.05,
                                           window_l = window_lth),
                           SIMPLIFY = F)
 
-      clst_p_values <- mapply(function(x,y)if(nrow(x)>0){cbind(x,y)}
-                              else{cbind(x,numeric(0L))},
-                              clst_temp, mapply(max, 1 - q_values, 0),
-                              SIMPLIFY = F)
+      clst_p_values <- mapply(function(x,y){
+        if(nrow(x)>0) cbind(x,y) else cbind(x,numeric(0L))
+      }, clst_temp, p_values, SIMPLIFY = F)
 
       if(nrow(clst_p_values[[length(clst_p_values)]])==0){
         break
@@ -106,10 +105,9 @@ tran_detct <- function(x, theta_th=1, theta_0 = theta_th, alpha_lvl=0.05,
                                           window_l = window_lth),
                           SIMPLIFY = F)
 
-      clst_temp <- mapply(function(x,y)if(nrow(x)>0){cbind(x+bd, y)}
-                          else{cbind(x+bd, numeric(0L))},
-                          clst_temp, mapply(max, 1 - q_values, 0),
-                          SIMPLIFY = F)
+      clst_temp <- mapply(function(x,y){
+        if(nrow(x)>0) cbind(x+bd, y) else cbind(x+bd, numeric(0L))
+      }, clst_temp, p_values, SIMPLIFY = F)
 
       if(nrow(clst_temp[[length(clst_temp)]])==0){
         break

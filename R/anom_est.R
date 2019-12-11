@@ -12,7 +12,7 @@ anom_est <- function(clst_p_values, alpha_lvl,
   }else if(n==1){
     res <- bds
   }else{
-    bds - bds[order(bds[,1]),,drop = F]
+    bds <- bds[order(bds[,1]),,drop = F]
 
     res <- bds[1,,drop = F]
     for (i in seq.int(2,nrow(bds))){
